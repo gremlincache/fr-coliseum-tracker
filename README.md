@@ -1,2 +1,3 @@
 # fr-coliseum-tracker
 Tool to let you see how many battles you've won and what loot you've gotten from the coliseum on Flight Rising. Doesn't scrape or provide any advantage, just displays the WS messages that can be found in devtools in a format that is easier to understand. Intended to be used with Tampermonkey
+All items are manually entered (const itemIndex) to connect the IDs (which are read from the WS message) with item names for better readability and proper bbcode. If an item does not exist in the itemIndex it will use gamedb=ID as fallback. Festival chests are not included in the itemIndex at this moment, neither is NotN loot (should add that, but might be in the future since it isn't needed just yet)
