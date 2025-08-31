@@ -1,3 +1,28 @@
-# fr-coliseum-tracker
-Tool to let you see how many battles you've won and what loot you've gotten from the coliseum on Flight Rising. Doesn't scrape or provide any advantage, just displays the WS messages that can be found in devtools in a format that is easier to understand. Intended to be used with Tampermonkey
-All items are manually entered (const itemIndex) to connect the IDs (which are read from the WS message) with item names for better readability and proper bbcode. If an item does not exist in the itemIndex it will use gamedb=ID as fallback. Festival chests are not included in the itemIndex at this moment, neither is NotN loot (should add that, but might be in the future since it isn't needed just yet)
+# Flight Rising Coliseum Tracker
+
+A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **This script does not interact with, scrape, or manipulate the game server in any way**, nor does it provide any gameplay advantage. It only reads the data already sent to your browser and displays it in a more organized, readable format for personal tracking purposes. All item names, categories and IDs are manually entered in the file itemIndex, and simply connects the IDs displayed in the messages sent to your browser to the listed names (with fallbacks for new items using the gamedb bbcode).
+
+## Features
+
+- Track Coliseum wins per venue
+- Display loot as BBCode (`[item=name]`, `[skin=id]`, or `[gamedb item=id]`)
+- Sort by item name or ID
+- Filter by categories: Food, Materials, Apparel, Familiars, Battle, Skins, Specialty, Other
+- Overview grid with item name and count, toggle to hide
+- Export all data as CSV or JSON
+- Storage using `localStorage`
+
+## Installation
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser.
+2. Open the [Flight Rising Coliseum Tracker v1.0.user](https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker%20v1.0.user.js) file in your browser.
+3. Click **Install** in Tampermonkey.
+4. The tracker will automatically load the external `itemIndex.js`.
+
+## Updating Items
+
+- Users will automatically get the updated item list the next time Tampermonkey refreshes the script from GitHub. Hopefully I get around to actually keeping it updaded lmao.
+
+## License
+
+[MIT License](LICENSE)
