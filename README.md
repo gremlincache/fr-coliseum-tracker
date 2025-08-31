@@ -11,6 +11,8 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 - Overview grid with item name and count, toggle to hide
 - Export all data as CSV or JSON
 - Storage using `localStorage`
+- Font size options (from 8px to 24px)
+- Dark and Light Theme
 
 ## Installation
 
