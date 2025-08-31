@@ -4,7 +4,7 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 
 ## Features
 
-- Track Coliseum wins per venue
+- Track Coliseum wins per venue (you have to manually swap venue to track in a new venue - the script has no idea which venue you're in, only what loot you get)
 - Display loot as BBCode (`[item=name]`, `[skin=id]`, or `[gamedb item=id]`)
 - Sort by item name or ID
 - Filter by categories: Food, Materials, Apparel, Familiars, Battle, Skins, Specialty, Other
