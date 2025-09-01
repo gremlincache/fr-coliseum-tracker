@@ -25,6 +25,11 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 
 - Users will automatically get the updated item list the next time Tampermonkey refreshes the script from GitHub. Hopefully I get around to actually keeping it updaded lmao.
 
+## Feedback and issues
+
+- If you have a GitHub account, feel free to open an issue if something isn't working.
+- You can also leave feedback using this Google Form (no login required): [Feedback Form FR Coli Tracker](https://docs.google.com/forms/d/e/1FAIpQLScvcs1QRKmo9Q7C6kQ6nM3aZ3PV9bRNjTLSyEbLTifZdEdz8Q/viewform?usp=dialog)
+
 ## License
 
 [MIT License](LICENSE)
