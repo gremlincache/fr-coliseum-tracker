@@ -23,7 +23,7 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 
 ## Updating Items
 
-- Users will automatically get the updated item list the next time Tampermonkey refreshes the script from GitHub. Hopefully I get around to actually keeping it updaded lmao.
+- Users will automatically get the updated item list the next time Tampermonkey refreshes the script from GitHub. Make sure that "Externals" update interval in your Tampermonkey settings is set to anything other than "Never" to actually get these updates! Hopefully I get around to actually keeping it updaded lmao.
 
 ## Feedback and issues
 
