@@ -1004,7 +1004,7 @@
 19571: {name: "Fungalhoof Cerdae Horn", category: "Materials"},
 28255: {name: "Cracked Rhinohide", category: "Materials"},
 28265: {name: "Malleable Greybricks", category: "Materials"},
-
+        
 // FAMILIARS
 
 338: {name: "Luna Mith", category: "Familiars"},
@@ -1563,7 +1563,7 @@
 52126: {name: "Harvest Waxwing", category: "Familiars"},
 27665: {name: "Plantation Pincher", category: "Familiars"},
 27664: {name: "Harvest Hardshell", category: "Familiars"},
-
+        
 // APPAREL
 
 269: {name: "Brown Wizard Hat", category: "Apparel"},
@@ -1918,7 +1918,7 @@
 59948: {name: "Ghastly Hunter's Holster", category: "Apparel"},
 59949: {name: "Ghastly Hunter's Mantle", category: "Apparel"},
 59950: {name: "Ghastly Hunter's Trail", category: "Apparel"},
-
+        
 // SKINS
 
 2470: {name: "Skin: Heartred Croaker", category: "Skin"},
@@ -1941,7 +1941,6 @@
 2570: {name: "Skin: Venerable Shalebuck", category: "Skin"},
 2747: {name: "Skin: Chimera", category: "Skin"},
 2748: {name: "Skin: Celestial Antelope", category: "Skin"},
-684: {name: "Waterskin", category: "Materials"},
 2749: {name: "Skin: Double-Tailed Warcat", category: "Skin"},
 2750: {name: "Skin: Longneck Magi", category: "Skin"},
 2751: {name: "Skin: Warcat Protector", category: "Skin"},
@@ -2136,9 +2135,7 @@
 27432: {name: "Skin: Raptorik Warrior", category: "Skin"},
 27433: {name: "Skin: Tigerblood Foo", category: "Skin"},
 27434: {name: "Accent: Tigerblood Foo", category: "Skin"},
-19263: {name: "Shadow Serpentskin", category: "Materials"},
 27435: {name: "Skin: Tigerblood Foo", category: "Skin"},
-19264: {name: "Snakeskin", category: "Materials"},
 27436: {name: "Skin: Coppercoil Creeper", category: "Skin"},
 27437: {name: "Accent: Coppercoil Creeper", category: "Skin"},
 27438: {name: "Accent: Scrapmetal Tracker", category: "Skin"},
@@ -2172,9 +2169,7 @@
 28714: {name: "Skin: Hippocampus", category: "Skin"},
 28716: {name: "Skin: King Parda", category: "Skin"},
 28718: {name: "Skin: King Parda", category: "Skin"},
-22402: {name: "Bluelight Chipskink Tail", category: "Materials"},
 28720: {name: "Skin: Manticore Screamer", category: "Skin"},
-22403: {name: "Chipskink Tail", category: "Materials"},
 28722: {name: "Skin: Paradise Zalis", category: "Skin"},
 28724: {name: "Skin: Parda", category: "Skin"},
 28726: {name: "Skin: Petal Jumper", category: "Skin"},
@@ -2235,9 +2230,7 @@
 37082: {name: "Accent: Hydra", category: "Skin"},
 37083: {name: "Accent: Igueel Matriarch", category: "Skin"},
 37084: {name: "Skin: Infestation Hound", category: "Skin"},
-22406: {name: "Bluelight Chipskink", category: "Familiars"},
 37085: {name: "Accent: Jelly Drone", category: "Skin"},
-22407: {name: "Chipskink", category: "Familiars"},
 37086: {name: "Skin: King Quillrunner", category: "Skin"},
 37087: {name: "Accent: Lap Pupowl", category: "Skin"},
 37088: {name: "Accent: Longneck Gladiator", category: "Skin"},
@@ -2246,14 +2239,12 @@
 37091: {name: "Skin: Mechanical Destroyer", category: "Skin"},
 37092: {name: "Accent: Mindless Flight", category: "Skin"},
 37093: {name: "Accent: Mith Bruiser", category: "Skin"},
-20117: {name: "Scaleskin Marlin", category: "Food"},
 37094: {name: "Accent: Moonbeam Crayfish", category: "Skin"},
 37096: {name: "Accent: Moss-Covered Guardian", category: "Skin"},
 37098: {name: "Accent: Mossy Pohip", category: "Skin"},
 37099: {name: "Accent: Myosotis Fox", category: "Skin"},
 37100: {name: "Accent: Nightfall Imp", category: "Skin"},
 37101: {name: "Accent: Overcharged Silverbeast", category: "Skin"},
-23856: {name: "Barkskin Watcher", category: "Familiars"},
 37102: {name: "Skin: Palefoot Tadhop", category: "Skin"},
 37103: {name: "Accent: Pebblehide Stoat", category: "Skin"},
 37104: {name: "Accent: Petalmane Floron", category: "Skin"},
@@ -2311,7 +2302,6 @@
 37342: {name: "Accent: Wood Ear Deer", category: "Skin"},
 37343: {name: "Accent: Woolly Walrus", category: "Skin"},
 37344: {name: "Accent: Workshop Monitor", category: "Skin"},
-24442: {name: "Basilisk Skin Crate", category: "Other"},
 
 // SPECIALTY
 
@@ -2602,7 +2592,6 @@
 34770: {name: "Amphibious Armor", category: "Other"},
 34783: {name: "Leon Mask", category: "Other"},
 34784: {name: "Ceramic Leon Mask", category: "Other"},
-25534: {name: "Accent: Otherworldly Aura", category: "Skin"},
 34785: {name: "Lurching Tome", category: "Other"},
 34786: {name: "Book of Eldritch Horror", category: "Other"},
 34819: {name: "Fascinator", category: "Other"},
@@ -2634,7 +2623,6 @@
 46435: {name: "Dryad Relief", category: "Other"},
 46436: {name: "Dryad Carving", category: "Other"},
 46439: {name: "Candy Necklace", category: "Other"},
-16479: {name: "Otherworldly Aura", category: "Familiars"},
 46440: {name: "Mushroom Necklace", category: "Other"},
 46451: {name: "Porcupine Macrame", category: "Other"},
 46452: {name: "Craft Creature", category: "Other"},
@@ -2670,7 +2658,6 @@
 58429: {name: "Bone Beetle Pendent", category: "Other"},
 59267: {name: "Sweet Wishes", category: "Other"},
 59268: {name: "Candy Stars", category: "Other"},
-33347: {name: "Lurker Motherboard", category: "Materials"},
 893: {name: "All-Seeing Shroom", category: "Other"},
 892: {name: "Bladed Flatleaf", category: "Other"},
 46518: {name: "Broken Arrow", category: "Other"},
@@ -2930,4 +2917,5 @@
 
     };
 })();
+
 
