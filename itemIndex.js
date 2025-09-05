@@ -625,8 +625,8 @@
 2413: {name: "Honeycomb Fragment", category: "Food"},
 3084: {name: "Dark-Tufted Featherduster", category: "Food"},
 3085: {name: "Yellow-Tinged Featherduster", category: "Food"},
-31626: {name: "Horn of Plenty", category: "Food"}
-31625: {name: "Heavy Grainbasket", category: "Food"}
+31626: {name: "Horn of Plenty", category: "Food"},
+31625: {name: "Heavy Grainbasket", category: "Food"},
 
 // MATERIALS
 
@@ -2806,16 +2806,14 @@
 18973: {name: "Janus Trap Crate", category: "Other"},
 9230: {name: "Jeweled Octoflyer Crate", category: "Other"},
 9231: {name: "Kelp Beds Crate", category: "Other"},
-9232: {name: "Kelp Tender Crate
-", category: "Other"},
+9232: {name: "Kelp Tender Crate", category: "Other"},
 28717: {name: "King Parda Crate", category: "Other"},
 28719: {name: "KingParda Crate", category: "Other"},
 19255: {name: "Leafy Moth Crate", category: "Other"},
 24825: {name: "Leopard Coralclimber Crate", category: "Other"},
 15110: {name: "Light's Trick Crate", category: "Other"},
 19257: {name: "Luna Mith Crate", category: "Other"},
-25542: {name: "Lux Crate
-", category: "Other"},
+25542: {name: "Lux Crate", category: "Other"},
 25543: {name: "Lux Spectre Crate", category: "Other"},
 2755: {name: "Magi Crate", category: "Other"},
 25548: {name: "Malevolent Crate", category: "Other"},
