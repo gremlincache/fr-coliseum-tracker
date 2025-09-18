@@ -25,6 +25,11 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 
 - Users will automatically get the updated item list the next time Tampermonkey refreshes the script from GitHub. Make sure that "Externals" update interval in your Tampermonkey settings is set to anything other than "Never" to actually get these updates! Hopefully I get around to actually keeping it updaded lmao.
 
+## Troubleshooting
+- If I fuck up the formatting in itemIndex, the entire script will decide to nope out. If an update has been pushed that edites the itemIndex and you notice the script stopped working, make sure you refresh the "Externals" update interval once a fix has been implemented. To confirm if this is an issue that is causing the window to disappear, edit the code in Tampermonkey (this only edits your local copy) and remove the line that starts with @require. If removing this line makes the window re-appear, then you know the itemIndex is the culprit. Sorry!
+- The script only appears on the coliseum battle pages, which is intended. (specifically any part of the site that starts with https://flightrising.com/main.php? as the URL)
+- Previously, the script ran on document-start, which caused issues for Firefox users. The script now uses document-end, which should hopefully resolve this. If it doesn't, uhhh please report the error in the feedback form and I will do my best to fix it ..b
+
 ## Feedback and issues
 
 - If you have a GitHub account, feel free to open an issue if something isn't working.
