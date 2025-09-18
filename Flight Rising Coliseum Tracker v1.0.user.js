@@ -5,7 +5,7 @@
 // @description  Coliseum tracker with BBCode, categories, sorting, overview, dark and light theme and font sizes.
 // @match        https://flightrising.com/main.php?*
 // @grant        none
-// @run-at       document-end
+// @run-at       document-start
 // @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/main/itemIndex.js
 // @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker%20v1.0.user.js
 // @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker%20v1.0.user.js
