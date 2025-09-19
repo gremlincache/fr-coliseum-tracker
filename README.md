@@ -28,10 +28,10 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 ## Troubleshooting
 - If I fuck up the formatting in itemIndex, the entire script will decide to nope out. If an update has been pushed that edites the itemIndex and you notice the script stopped working, make sure you refresh the "Externals" update interval once a fix has been implemented. To confirm if this is an issue that is causing the window to disappear, edit the code in Tampermonkey (this only edits your local copy) and remove the line that starts with @require. If removing this line makes the window re-appear, then you know the itemIndex is the culprit. Sorry!
 - The script only appears on the coliseum battle pages, which is intended. (specifically any part of the site that starts with https://flightrising.com/main.php? as the URL)
-- Previously, the script ran on document-start, which caused issues for Firefox users. The script now uses document-end, which should hopefully resolve this. If it doesn't, uhhh please report the error in the feedback form and I will do my best to fix it ..b
+- Yeah tbh idk how to troubleshoot this. pray? and let me know in the feedback form so I can poke at it ..b
 
 ## Feedback and issues
-
+- Previously, the script had issues for Firefox users. The script should now work since it's been split so while it starts running and listening for WS messages on document-start, the UI doesn't render until the page is ready (which was previously making it not appear at all). If it still doesn't work, uhhh please report the error in the feedback form and I will do my best to fix it ..b
 - If you have a GitHub account, feel free to open an issue if something isn't working.
 - You can also leave feedback using this Google Form (no login required): [Feedback Form FR Coli Tracker](https://docs.google.com/forms/d/e/1FAIpQLScvcs1QRKmo9Q7C6kQ6nM3aZ3PV9bRNjTLSyEbLTifZdEdz8Q/viewform?usp=dialog)
 
