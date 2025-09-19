@@ -2386,6 +2386,7 @@
 46154: {name: "Tertiary Gene: Flecks", category: "Specialty"},
 41418: {name: "Scene: Drakeharvest", category: "Specialty"},
 46886: {name: "Vista: Drakeharvest", category: "Specialty"},
+35959: {name: "Scene: Voyage of the Tenacity", category: "Specialty"},
 
 // OTHER
 
@@ -2917,5 +2918,6 @@
 
     };
 })();
+
 
 
