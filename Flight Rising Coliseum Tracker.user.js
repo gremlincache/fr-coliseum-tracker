@@ -1,14 +1,14 @@
 // ==UserScript==
-// @name         Flight Rising Coliseum Tracker v1.1
+// @name         Flight Rising Coliseum Tracker
 // @namespace    https://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  Coliseum tracker with BBCode, categories, sorting, overview, dark and light theme and font sizes.
 // @match        https://flightrising.com/main.php?*
 // @grant        none
 // @run-at       document-start
 // @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/main/itemIndex.js
-// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker%20v1.1.user.js
-// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker%20v1.1.user.js
+// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
+// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
 // ==/UserScript==
 
 (function() {
@@ -31,6 +31,9 @@
     let overviewVisible = false;
     let fontSize = parseInt(localStorage.getItem("fr_coli_fontSize")) || 12;
     let themeMode = localStorage.getItem("fr_coli_theme") || "dark";
+    let headerMode = localStorage.getItem("fr_coli_headerMode") || "all";
+    let bbcodeLayout = localStorage.getItem("fr_coli_bbcodeLayout") || "lines"; // options: "lines", "block", "columns"
+
 
     const themes = {
         dark: { bg:"rgb(31,29,29)", text:"rgb(233,233,233)", border:"rgb(0,0,0)" },
@@ -48,24 +51,135 @@
     };
 
     // --- Format BBCode
-    function formatLootAsBBCode(loot,categoryFilter,sortBy){
-        const entries = Object.keys(loot).map(id=>({id,amount:loot[id]}));
-        if(sortBy==="name"){
-            entries.sort((a,b)=>{
-                const aName=itemIndex[a.id]?.name||a.id;
-                const bName=itemIndex[b.id]?.name||b.id;
-                return aName.localeCompare(bName);
-            });
-        }
-        else{ entries.sort((a,b)=>a.id-b.id); }
-        return entries.filter(e=>categoryFilter==="All"||itemIndex[e.id]?.category===categoryFilter)
-            .map(e=>{
-                const entry=itemIndex[e.id];
-                if(entry?.category==="Skins") return `[skin=${e.id}] x${e.amount}`;
-                if(!entry?.name) return `[gamedb item=${e.id}] x${e.amount}`;
-                return `[item=${entry.name}] x${e.amount}`;
-            }).join("\n");
+function formatLootAsBBCode(loot, categoryFilter, sortBy) {
+    const entries = Object.keys(loot).map(id => {
+        const entry = itemIndex[id];
+        return {
+            id,
+            amount: loot[id],
+            name: entry?.name || id,
+            category: entry?.category || "Other"
+        };
+    });
+
+    // --- Sorting
+    function categoryOrder(cat) {
+        const idx = categories.indexOf(cat);
+        return idx === -1 ? categories.length : idx; // unknown cats go last
     }
+
+    if (sortBy === "name") {
+        entries.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "id") {
+        entries.sort((a, b) => a.id - b.id);
+    } else if (sortBy === "category-name") {
+        entries.sort((a, b) => {
+            const catOrder = categoryOrder(a.category) - categoryOrder(b.category);
+            if (catOrder !== 0) return catOrder;
+            return a.name.localeCompare(b.name);
+        });
+    } else if (sortBy === "category-id") {
+        entries.sort((a, b) => {
+            const catOrder = categoryOrder(a.category) - categoryOrder(b.category);
+            if (catOrder !== 0) return catOrder;
+            return a.id - b.id;
+        });
+    }
+
+    // --- Filtering
+    const filtered = entries.filter(e =>
+        categoryFilter === "All" || e.category === categoryFilter
+    );
+
+    // --- Helper to format one entry
+    function formatEntry(e) {
+        if (e.category === "Skins") return `[skin=${e.id}] x${e.amount}`;
+        if (!itemIndex[e.id]?.name) return `[gamedb item=${e.id}] x${e.amount}`;
+        return `[item=${e.name}] x${e.amount}`;
+    }
+
+    // --- If not sorting by category, output flat list (no headers)
+    if (sortBy === "name" || sortBy === "id") {
+        const formatted = filtered.map(formatEntry);
+
+        if (bbcodeLayout === "lines") {
+            return formatted.join("\n");
+        } else if (bbcodeLayout === "block") {
+            return formatted.join(" ");
+        } else if (bbcodeLayout === "columns") {
+            let output = "[columns]\n";
+            formatted.forEach((item, i) => {
+                const [base, amount] = item.split(" x");
+                output += `${base}\n x${amount}`;
+                if ((i + 1) % 6 === 0) {
+                    output += "\n[/columns]\n[columns]\n"; // close & reopen
+                } else {
+                    output += "\n[nextcol]\n";
+                }
+            });
+            if (!output.endsWith("[/columns]")) {
+                output += "[/columns]";
+            }
+            return output;
+        }
+    }
+
+    // --- If sorting by category, build grouped sections
+    let result = "";
+    let currentCat = null;
+    let currentGroup = [];
+
+    function flushGroup() {
+        if (currentGroup.length === 0) return;
+        const formatted = currentGroup.map(formatEntry);
+
+        if (bbcodeLayout === "lines") {
+            result += formatted.join("\n") + "\n";
+        } else if (bbcodeLayout === "block") {
+            result += formatted.join(" ") + "\n";
+        } else if (bbcodeLayout === "columns") {
+            let colBlock = "[columns][center]\n";
+            formatted.forEach((item, i) => {
+                const [base, amount] = item.split(" x");
+                colBlock += `${base}\n x${amount}`;
+                if ((i + 1) % 6 === 0) {
+                    colBlock += "\n[/columns]\n[columns][center]\n";
+                } else {
+                    colBlock += "\n[nextcol][center]\n";
+                }
+            });
+            if (!colBlock.endsWith("[/columns]")) {
+                colBlock += "[/columns]";
+            }
+            result += colBlock + "\n";
+        }
+
+        currentGroup = [];
+    }
+
+    filtered.forEach(e => {
+        if (e.category !== currentCat) {
+            // flush previous group
+            flushGroup();
+
+            currentCat = e.category;
+
+            // --- Header logic
+            if (
+                headerMode === "always" ||                    // Always add header
+                (headerMode === "all" && categoryFilter === "All") // Only add if viewing ALL
+            ) {
+                result += `\n[b]${currentCat}[/b]\n`;
+            }
+        }
+        currentGroup.push(e);
+    });
+
+    flushGroup(); // flush last
+
+    return result.trim();
+}
+
 
     // --- Export Functions
     function exportJSON(){
@@ -130,7 +244,7 @@
         // --- Main panel
     let panel, toggleBtn, lootArea, switchBtn, venuePopup, venueSpan, venueLabel, confirmBtn, cancelBtn, venueSelect, bbTextarea, sortSelect, catSelect, resetAllBtn, resetBtn, overviewToggle;
         // --- Settings panel
-    let cogBtn, settingsPopup, fontInput, themeBtn, exportCSVBtn, exportJSONBtn;
+    let cogBtn, settingsPopup, fontInput, themeBtn, exportCSVBtn, exportJSONBtn, headerLabel, headerSelect;
 
     ready(() => {
 
@@ -182,7 +296,7 @@
     cancelBtn.textContent="Cancel";
     venuePopup.appendChild(cancelBtn);
 
-    // --- Settings UI
+    // --- Settings
     cogBtn = document.createElement("button");
     cogBtn.textContent="⚙";
     panel.appendChild(cogBtn);
@@ -193,7 +307,7 @@
 
     // --- Settings Controls
 
-    // Container for the font size control
+    // Container for the controls
     let fontRow = document.createElement("div");
     applyStyles(fontRow, {
         display: "flex",
@@ -202,11 +316,57 @@
         margin: "4px"
         });
 
-    // Create the label
-    let fontLabel = document.createElement("label");
+    let headerRow = document.createElement("div");
+
+    applyStyles(headerRow, {
+        display: "flex",
+        justifyContent: "space-between", // label left, input right
+        alignItems: "center", // vertical alignment
+        margin: "4px"
+        });
+
+    let themeRow = document.createElement("div");
+    applyStyles(themeRow, {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        margin: "4px"
+    })
+
+    let bbcodeLayoutRow = document.createElement("div");
+    applyStyles(bbcodeLayoutRow, {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        margin: "4px"
+    })
+
+    // Create the labels
+    const fontLabel = document.createElement("span");
     fontLabel.textContent = "Font size:";
     applyStyles(fontLabel, {
         display: "inline-block", // ensures width behaves predictably
+        textAlign: "left",
+    });
+
+    headerLabel = document.createElement("span");
+    headerLabel.textContent = "Category Headers:";
+    applyStyles(headerLabel, {
+        display: "inline-block",
+        textAlign: "left",
+    });
+
+    const themeLabel = document.createElement("span");
+    themeLabel.textContent = "Theme:";
+    applyStyles(themeLabel, {
+        display: "inline-block",
+        textAlign: "left",
+    });
+
+    const layoutLabel = document.createElement("span");
+    layoutLabel.textContent = "BBCode Layout:";
+        applyStyles(layoutLabel, {
+        display: "inline-block",
         textAlign: "left",
     });
 
@@ -216,8 +376,8 @@
     fontInput.value = fontSize;
     fontInput.min = 8;
     fontInput.max = 24;
-    fontInput.style.width = "50px"; // static width
-    fontInput.style.textAlign = "center";
+    // fontInput.style.width = "50px"; // static width
+    // fontInput.style.textAlign = "center";
     fontInput.onchange = () => {
     fontSize = parseInt(fontInput.value);
     localStorage.setItem("fr_coli_fontSize", fontSize);
@@ -232,15 +392,75 @@
 
     // Append the row to settingsPopup
     settingsPopup.appendChild(fontRow);
+    settingsPopup.appendChild(themeRow);
 
-    themeBtn = document.createElement("button");
-    themeBtn.textContent="Toggle Theme";
-    themeBtn.onclick = ()=>{
+    themeBtn = document.createElement("select");
+    // themeBtn.textContent="Toggle Theme";
+
+    ["dark", "light"].forEach(mode => {
+        const opt = document.createElement("option");
+        opt.value = mode;
+        opt.textContent =
+            mode === "dark" ? "Dark" :
+            mode === "light" ? "Light" :
+            "None";
+            if (mode === themeMode) opt.selected = true;
+            themeBtn.appendChild(opt);
+    })
+
+    themeBtn.onchange = ()=>{
         themeMode = themeMode==="dark"?"light":"dark";
         localStorage.setItem("fr_coli_theme",themeMode);
         updateUI();
     };
-    settingsPopup.appendChild(themeBtn);
+    themeRow.appendChild(themeLabel);
+    themeRow.appendChild(themeBtn);
+
+    headerSelect = document.createElement("select");
+    ["always", "all", "none"].forEach(mode => {
+        const opt = document.createElement("option");
+        opt.value = mode;
+        opt.textContent =
+            mode === "always" ? "Always" :
+            mode === "all" ? "All Only" :
+            "None";
+            if (mode === headerMode) opt.selected = true;
+            headerSelect.appendChild(opt);
+    })
+
+    headerSelect.onchange = () => {
+        headerMode = headerSelect.value;
+        localStorage.setItem("fr_coli_headerMode", headerMode);
+        updateUI();
+    };
+
+    let layoutSelect = document.createElement("select");
+    ["lines","block","columns"].forEach(mode => {
+    const opt = document.createElement("option");
+    opt.value = mode;
+    opt.textContent =
+        mode === "lines" ? "One per line" :
+        mode === "block" ? "Block" :
+        "Columns";
+    if (mode === bbcodeLayout) opt.selected = true;
+    layoutSelect.appendChild(opt);
+    });
+    layoutSelect.onchange = () => {
+    bbcodeLayout = layoutSelect.value;
+    localStorage.setItem("fr_coli_bbcodeLayout", bbcodeLayout);
+    updateUI();
+    };
+    settingsPopup.appendChild(layoutSelect);
+
+    headerRow.appendChild(headerLabel);
+    headerRow.appendChild(headerSelect);
+
+    settingsPopup.appendChild(headerRow);
+
+    bbcodeLayoutRow.appendChild(layoutLabel);
+    bbcodeLayoutRow.appendChild(layoutSelect)
+    settingsPopup.appendChild(bbcodeLayoutRow);
+
 
     exportJSONBtn = document.createElement("button");
     exportJSONBtn.textContent="Export JSON";
@@ -370,13 +590,9 @@
                 fontSize: "12px",
         });
 
-    applyStyles(fontInput, {
-            borderRadius: "5px",
-        });
-
     applyStyles(panel, masterPanelStyle(), {
         width:"360px",
-        maxHeight:"550px",
+        maxHeight:"80%",
         overflowY:"auto",
         position: "fixed",
         right: "10px",
@@ -406,7 +622,25 @@
     applyStyles(cancelBtn, masterButtonStyle());
     applyStyles(venueSelect, masterButtonStyle());
 
-    applyStyles(themeBtn, masterButtonStyle());
+    applyStyles(themeBtn, masterButtonStyle(), {
+        maxWidth: "120px",
+        textAlign: "center",
+    });
+
+    applyStyles(headerSelect, masterButtonStyle(), {
+        maxWidth: "120px",
+        textAlign: "center",
+    });
+    applyStyles(fontInput, masterButtonStyle(), {
+        maxWidth: "104px",
+        textAlign: "center",
+    });
+
+    applyStyles(layoutSelect, masterButtonStyle(), {
+        maxWidth: "120px",
+        textAlign: "center",
+    });
+
     applyStyles(exportCSVBtn, masterButtonStyle());
     applyStyles(exportJSONBtn, masterButtonStyle());
 
@@ -493,9 +727,11 @@
 
         applyStyles(venuePopup, panelthemeStyle(theme, fontSize), {
             top: switchBtn.getBoundingClientRect().bottom + 5 + "px",
+            border: "2px solid " + theme.border,
         });
         applyStyles(settingsPopup, panelthemeStyle(theme, fontSize), {
             top: cogBtn.getBoundingClientRect().bottom + 5 + "px",
+            border: "2px solid " + theme.border,
         });
         applyStyles(bbTextarea, panelthemeStyle(theme, fontSize),);
 
@@ -513,11 +749,14 @@
         applyStyles(venueSelect, buttonthemeStyle(theme, fontSize),);
 
         applyStyles(themeBtn, buttonthemeStyle(theme, fontSize),);
+        applyStyles(headerSelect, buttonthemeStyle(theme, fontSize),);
+        applyStyles(fontInput, buttonthemeStyle(theme, fontSize),);
         applyStyles(exportCSVBtn, buttonthemeStyle(theme, fontSize),);
         applyStyles(exportJSONBtn, buttonthemeStyle(theme, fontSize),);
 
         applyStyles(sortSelect, buttonthemeStyle(theme, fontSize),);
         applyStyles(catSelect, buttonthemeStyle(theme, fontSize),);
+        applyStyles(layoutSelect, buttonthemeStyle(theme, fontSize),);
 
         applyStyles(resetBtn, buttonthemeStyle(theme, fontSize),);
         applyStyles(resetAllBtn, buttonthemeStyle(theme, fontSize),);
@@ -530,12 +769,15 @@
 
         // Sorting & Category
         sortSelect.innerHTML = "";
-        ["name","id"].forEach(s=>{
-            const opt=document.createElement("option");
-            opt.value=s;
-            opt.textContent=s==="name"?"Sort A-Z":"Sort by ID";
-            if(s===sortMode) opt.selected=true;
-
+        ["name", "id", "category-name", "category-id"].forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent =
+                s === "name" ? "Sort A–Z" :
+                s === "id" ? "Sort by ID" :
+                s === "category-name" ? "Category + A–Z" :
+                "Category + ID";
+            if (s === sortMode) opt.selected = true;
             sortSelect.appendChild(opt);
         });
 
@@ -549,7 +791,6 @@
             opt.value=c;
             opt.textContent=c;
             if(c===activeCategory) opt.selected=true;
-
             catSelect.appendChild(opt);
         });
 
