@@ -17,7 +17,7 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 ## Installation
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser.
-2. Open the [Flight Rising Coliseum Tracker v1.1.user](https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker%20v1.1.user.js) file in your browser.
+2. Open the [Flight Rising Coliseum Tracker.user](https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js) file in your browser.
 3. Click **Install** in Tampermonkey.
 4. Done! The script is now installed
 
