@@ -2826,6 +2826,16 @@
 28693: {name: "Mossy Cerdae Crate", category: "Other"},
 25546: {name: "Nightmare Crate", category: "Other"},
 
+// TEMPORARY FESTIVAL ITEMS (CHESTS)
+65335: {name: "Bewitching Starmage Chest", category: "Other"},
+65336: {name: "Oculus Chest", category: "Other"},
+65337: {name: "Shaded Deceit Chest", category: "Other"},
+65338: {name: "Exoplanet Enigma Chest", category: "Other"},
+65339: {name: "Strange Mutations Chest", category: "Other"},
+65340: {name: "Cosmos Lux Chest", category: "Other"},
+65341: {name: "Voidstalker Chest", category: "Other"},
+65342: {name: "Starlit Strand Chest", category: "Other"},
+
 // BATTLE
 
 495: {name: "Scratch", category: "Battle"},
@@ -2918,6 +2928,7 @@
 
     };
 })();
+
 
 
 
