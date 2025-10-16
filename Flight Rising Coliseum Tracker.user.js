@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flight Rising Coliseum Tracker
 // @namespace    https://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Coliseum tracker with BBCode, categories, sorting, overview, dark and light theme and font sizes.
 // @match        https://flightrising.com/main.php?*
 // @grant        none
@@ -16,6 +16,38 @@
 
     // --- External itemIndex
     const itemIndex = window.itemIndex;
+
+    // --- Highlight default preset
+    const defaultHighlightPreset = [
+        "577","578","579","580","581","582","583","584","585","586","587", //unhatched eggs
+        "498", // eliminate
+        "1222","7594","7600","7882","7883","10231","10233","11522","11525","13428","13430","16481","16487","16911","16912","17507","17508","20145","20157","21430","21431","23842","23844","25776","25777","28235","28236","34765","34766","36300","36301","51945","51946" // boss familiars
+    ];
+
+    // current runtime preset (will be loaded from localStorage if present)
+    let highlightPreset = [...defaultHighlightPreset];
+
+    // highlight mode: "off" | "duplicate" | "exclusive"
+    let highlightMode = localStorage.getItem("fr_coli_highlightMode") || "duplicate";
+
+    // try to load a custom preset from localStorage (if user previously imported one)
+    (function loadHighlightPresetFromStorage() {
+    const stored = localStorage.getItem("fr_coli_customHighlight");
+    if (!stored) return;
+    try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+        // Normalize to strings to avoid number/string mismatches
+        highlightPreset = parsed.map(String);
+        } else {
+        console.warn("fr_coli_customHighlight is not an array — ignoring.");
+        localStorage.removeItem("fr_coli_customHighlight");
+        }
+    } catch (err) {
+        console.warn("Could not parse fr_coli_customHighlight — ignoring.", err);
+        localStorage.removeItem("fr_coli_customHighlight");
+    }
+    })();
 
     // --- Venues & Categories
     const venues = ["Training Fields","Woodland Path","Scorched Forest","Boneyard","Sandswept Delta",
@@ -34,7 +66,6 @@
     let headerMode = localStorage.getItem("fr_coli_headerMode") || "all";
     let bbcodeLayout = localStorage.getItem("fr_coli_bbcodeLayout") || "lines"; // options: "lines", "block", "columns"
 
-
     const themes = {
         dark: { bg:"rgb(31,29,29)", text:"rgb(233,233,233)", border:"rgb(0,0,0)" },
         light:{ bg:"rgb(233,233,233)", text:"rgb(0,0,0)", border:"rgb(255,255,255)" }
@@ -45,141 +76,144 @@
     const saveVenueData = (v,d) => localStorage.setItem(`fr_coli_data_${v}`, JSON.stringify(d));
     const getCurrentData = () => getVenueData(currentVenue);
 
-    // --- Helpers
+    // --- Helpers ---
+
+    // --- Styling
     const applyStyles = (el, baseStyles, overrides = {}) => {
         Object.assign(el.style, {...baseStyles, ...overrides});
     };
 
     // --- Format BBCode
-function formatLootAsBBCode(loot, categoryFilter, sortBy) {
-    const entries = Object.keys(loot).map(id => {
-        const entry = itemIndex[id];
-        return {
-            id,
+    function formatLootAsBBCode(loot, categoryFilter, sortBy) {
+        let result = "";
+
+        // normalize entries
+        const entries = Object.keys(loot).map(id => {
+            const entry = itemIndex[id];
+            return {
+            id: String(id),
             amount: loot[id],
             name: entry?.name || id,
             category: entry?.category || "Other"
-        };
-    });
-
-    // --- Sorting
-    function categoryOrder(cat) {
-        const idx = categories.indexOf(cat);
-        return idx === -1 ? categories.length : idx; // unknown cats go last
-    }
-
-    if (sortBy === "name") {
-        entries.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === "id") {
-        entries.sort((a, b) => a.id - b.id);
-    } else if (sortBy === "category-name") {
-        entries.sort((a, b) => {
-            const catOrder = categoryOrder(a.category) - categoryOrder(b.category);
-            if (catOrder !== 0) return catOrder;
-            return a.name.localeCompare(b.name);
+            };
         });
-    } else if (sortBy === "category-id") {
-        entries.sort((a, b) => {
-            const catOrder = categoryOrder(a.category) - categoryOrder(b.category);
-            if (catOrder !== 0) return catOrder;
-            return a.id - b.id;
-        });
-    }
 
-    // --- Filtering
-    const filtered = entries.filter(e =>
-        categoryFilter === "All" || e.category === categoryFilter
-    );
+        // categories ordering helper (use the same categories array you had)
+        function categoryOrder(cat) {
+            const idx = categories.indexOf(cat);
+            return idx === -1 ? categories.length : idx;
+        }
 
-    // --- Helper to format one entry
-    function formatEntry(e) {
-        if (e.category === "Skins") return `[skin=${e.id}] x${e.amount}`;
-        if (!itemIndex[e.id]?.name) return `[gamedb item=${e.id}] x${e.amount}`;
-        return `[item=${e.name}] x${e.amount}`;
-    }
+        // sorting
+        if (sortBy === "name") {
+            entries.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sortBy === "id") {
+            entries.sort((a, b) => Number(a.id) - Number(b.id));
+        } else if (sortBy === "category-name") {
+            entries.sort((a, b) => {
+            const co = categoryOrder(a.category) - categoryOrder(b.category);
+            return co !== 0 ? co : a.name.localeCompare(b.name);
+            });
+        } else if (sortBy === "category-id") {
+            entries.sort((a, b) => {
+            const co = categoryOrder(a.category) - categoryOrder(b.category);
+            return co !== 0 ? co : Number(a.id) - Number(b.id);
+            });
+        }
 
-    // --- If not sorting by category, output flat list (no headers)
-    if (sortBy === "name" || sortBy === "id") {
-        const formatted = filtered.map(formatEntry);
+        // highlights
+        const highlightSet = new Set((highlightPreset || []).map(String));
+        const highlights = entries.filter(e => highlightSet.has(e.id));
 
-        if (bbcodeLayout === "lines") {
-            return formatted.join("\n");
-        } else if (bbcodeLayout === "block") {
-            return formatted.join(" ");
-        } else if (bbcodeLayout === "columns") {
-            let output = "[columns]\n";
+        // entriesToUse respects exclusive mode (remove highlights from normal entries)
+        const entriesToUse = highlightMode === "exclusive"
+            ? entries.filter(e => !highlightSet.has(e.id))
+            : entries.slice(); // duplicate and off: keep entries as-is
+
+        // filtering by category selection
+        let filtered;
+        if (categoryFilter === "All") {
+            filtered = entriesToUse;
+        } else if (categoryFilter === "Highlights") {
+            filtered = highlights;
+        } else {
+            filtered = entriesToUse.filter(e => e.category === categoryFilter);
+        }
+
+        // helper to format one entry
+        function formatEntry(e) {
+            if (e.category === "Skins") return `[skin=${e.id}] x${e.amount}`;
+            if (!itemIndex[e.id]?.name) return `[gamedb item=${e.id}] x${e.amount}`;
+            return `[item=${e.name}] x${e.amount}`;
+        }
+
+        // add highlight block at top when viewing All AND highlightMode isn't off
+        if (categoryFilter === "All" && highlightMode !== "off" && highlights.length) {
+            if (headerMode !== "none") result += `[b]Highlights[/b]\n`;
+            // if exclusive, highlights are already not in entriesToUse; if duplicate they will also appear later
+            highlights.forEach(h => result += formatEntry(h) + "\n");
+            result += "\n";
+        }
+
+        // flat list (no headers) when not sorting by category
+        if (sortBy === "name" || sortBy === "id") {
+            const formatted = filtered.map(formatEntry);
+            if (bbcodeLayout === "lines") return result + formatted.join("\n");
+            if (bbcodeLayout === "block") return result + formatted.join(" ");
+            if (bbcodeLayout === "columns") {
+            let output = result + "[columns]\n";
             formatted.forEach((item, i) => {
                 const [base, amount] = item.split(" x");
                 output += `${base}\n x${amount}`;
-                if ((i + 1) % 6 === 0) {
-                    output += "\n[/columns]\n[columns]\n"; // close & reopen
-                } else {
-                    output += "\n[nextcol]\n";
+                // only append nextcol if there's a next item
+                if (i < formatted.length - 1) {
+                if ((i + 1) % 6 === 0) output += "\n[/columns]\n[columns]\n";
+                else output += "\n[nextcol]\n";
                 }
             });
-            if (!output.endsWith("[/columns]")) {
-                output += "[/columns]";
-            }
+            if (!output.endsWith("[/columns]")) output += "[/columns]";
             return output;
         }
     }
 
-    // --- If sorting by category, build grouped sections
-    let result = "";
+    // grouped by category (category-name or category-id)
     let currentCat = null;
     let currentGroup = [];
 
     function flushGroup() {
-        if (currentGroup.length === 0) return;
+        if (!currentGroup.length) return;
         const formatted = currentGroup.map(formatEntry);
-
-        if (bbcodeLayout === "lines") {
-            result += formatted.join("\n") + "\n";
-        } else if (bbcodeLayout === "block") {
-            result += formatted.join(" ") + "\n";
-        } else if (bbcodeLayout === "columns") {
-            let colBlock = "[columns][center]\n";
-            formatted.forEach((item, i) => {
-                const [base, amount] = item.split(" x");
-                colBlock += `${base}\n x${amount}`;
-                if ((i + 1) % 6 === 0) {
-                    colBlock += "\n[/columns]\n[columns][center]\n";
-                } else {
-                    colBlock += "\n[nextcol][center]\n";
-                }
-            });
-            if (!colBlock.endsWith("[/columns]")) {
-                colBlock += "[/columns]";
+        if (bbcodeLayout === "lines") result += formatted.join("\n") + "\n";
+        else if (bbcodeLayout === "block") result += formatted.join(" ") + "\n";
+        else if (bbcodeLayout === "columns") {
+        let block = "[columns]\n";
+        formatted.forEach((item, i) => {
+            const [base, amount] = item.split(" x");
+            block += `${base}\n x${amount}`;
+            if (i < formatted.length - 1) {
+            if ((i + 1) % 6 === 0) block += "\n[/columns]\n[columns]\n";
+            else block += "\n[nextcol]\n";
             }
-            result += colBlock + "\n";
+        });
+        if (!block.endsWith("[/columns]")) block += "[/columns]";
+        result += block + "\n";
         }
-
         currentGroup = [];
     }
 
     filtered.forEach(e => {
         if (e.category !== currentCat) {
-            // flush previous group
-            flushGroup();
-
-            currentCat = e.category;
-
-            // --- Header logic
-            if (
-                headerMode === "always" ||                    // Always add header
-                (headerMode === "all" && categoryFilter === "All") // Only add if viewing ALL
-            ) {
-                result += `\n[b]${currentCat}[/b]\n`;
-            }
+        flushGroup();
+        currentCat = e.category;
+        const showHeader = headerMode === "always" || (headerMode === "all" && categoryFilter === "All");
+        if (showHeader && headerMode !== "none") result += `\n[b]${currentCat}[/b]\n`;
         }
         currentGroup.push(e);
     });
 
-    flushGroup(); // flush last
-
+    flushGroup();
     return result.trim();
-}
-
+    }
 
     // --- Export Functions
     function exportJSON(){
@@ -211,6 +245,38 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         URL.revokeObjectURL(url);
     }
 
+    function importHighlightPreset() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json";
+        input.onchange = (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+            try {
+                const parsed = JSON.parse(ev.target.result);
+                if (!Array.isArray(parsed)) throw new Error("Not array");
+                highlightPreset = parsed.map(String);
+                localStorage.setItem("fr_coli_customHighlight", JSON.stringify(highlightPreset));
+                alert("Highlight preset imported.");
+                updateUI();
+            } catch {
+                alert("Invalid highlight preset file (expected JSON array of IDs).");
+            }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    function resetHighlightPreset() {
+    if (!confirm("Reset highlight preset to default?")) return;
+    localStorage.removeItem("fr_coli_customHighlight");
+    highlightPreset = [...defaultHighlightPreset].map(String);
+    updateUI();
+    }
+
     // --- WebSocket Patch
     const OriginalWebSocket = window.WebSocket;
     window.WebSocket = function(url,...rest){
@@ -240,11 +306,17 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
             else document.addEventListener("DOMContentLoaded", fn);
     }
 
+    function closeAllPopups() {
+        if (settingsPopup) settingsPopup.style.display = "none";
+        if (venuePopup) venuePopup.style.display = "none";
+    }
+
     // --- Declare UI elements outside of Ready
         // --- Main panel
     let panel, toggleBtn, lootArea, switchBtn, venuePopup, venueSpan, venueLabel, confirmBtn, cancelBtn, venueSelect, bbTextarea, sortSelect, catSelect, resetAllBtn, resetBtn, overviewToggle;
         // --- Settings panel
     let cogBtn, settingsPopup, fontInput, themeBtn, exportCSVBtn, exportJSONBtn, headerLabel, headerSelect;
+        // ---
 
     ready(() => {
 
@@ -254,7 +326,12 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
 
     document.body.appendChild(toggleBtn);
 
-    toggleBtn.onclick = ()=>{ panel.style.display = panel.style.display==="none"?"block":"none"; };
+    toggleBtn.onclick = () => {
+        const isVisible = panel.style.display !== "none";
+        panel.style.display = isVisible ? "none" : "block";
+        if (isVisible) closeAllPopups(); // hide all subpopups when closing
+    };
+
 
         // --- Panel
     panel = document.createElement("div");
@@ -341,6 +418,22 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         margin: "4px"
     })
 
+    let highlightRow = document.createElement("div");
+    applyStyles(highlightRow, {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        margin: "4px"
+    })
+
+    let presetRow = document.createElement("div");
+    applyStyles(presetRow, {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        margin: "4px"
+    })
+
     // Create the labels
     const fontLabel = document.createElement("span");
     fontLabel.textContent = "Font size:";
@@ -370,6 +463,20 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         textAlign: "left",
     });
 
+    const highlightLabel = document.createElement("span");
+    highlightLabel.textContent = "Highlight Drops:";
+    applyStyles(highlightLabel, {
+            display: "inline-block",
+            textAlign: "left",
+        });
+
+    const highlightPresetLabel = document.createElement("span");
+    highlightPresetLabel.textContent = "Highlight Preset:";
+    applyStyles(highlightLabel, {
+            display: "inline-block",
+            textAlign: "left",
+        });
+
     // Create the input
     fontInput = document.createElement("input");
     fontInput.type = "number";
@@ -384,6 +491,22 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         const wasOpen = settingsPopup.style.display === "block"; // remember state
         updateUI();
         if (wasOpen) settingsPopup.style.display = "block"; // restore open state
+    };
+
+    const highlightSelect = document.createElement("select");
+    ["off","duplicate","exclusive"].forEach(mode => {
+        const opt = document.createElement("option");
+        opt.value = mode;
+        opt.textContent = mode === "off" ? "Off" : mode === "duplicate" ? "Duplicate" : "Exclusive";
+        if (mode === highlightMode) opt.selected = true;
+        highlightSelect.appendChild(opt);
+    });
+    highlightSelect.onchange = () => {
+        highlightMode = highlightSelect.value;
+        localStorage.setItem("fr_coli_highlightMode", highlightMode);
+        // if user turned highlights off while activeCategory is Highlights, reset activeCategory
+        if (highlightMode === "off" && activeCategory === "Highlights") activeCategory = "All";
+        updateUI();
     };
 
    // Append label and input to the row
@@ -461,6 +584,37 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
     bbcodeLayoutRow.appendChild(layoutSelect)
     settingsPopup.appendChild(bbcodeLayoutRow);
 
+    // import / reset buttons and group for alignment
+    const buttonGroup = document.createElement("div");
+        applyStyles(buttonGroup, {
+        width: "120px",
+        margin: "2px",
+        display: "flex",
+        gap: "6px",
+        justifyContent: "flex-end",
+        flexWrap: "wrap"
+    });
+
+    const importPresetBtn = document.createElement("button");
+    importPresetBtn.textContent = "Import";
+    importPresetBtn.onclick = importHighlightPreset;
+
+    const resetPresetBtn = document.createElement("button");
+    resetPresetBtn.textContent = "Reset";
+    resetPresetBtn.onclick = resetHighlightPreset;
+
+    highlightRow.appendChild(highlightLabel);
+    highlightRow.appendChild(highlightSelect);
+
+    presetRow.appendChild(highlightPresetLabel);
+    buttonGroup.appendChild(importPresetBtn);
+    buttonGroup.appendChild(resetPresetBtn);
+    presetRow.appendChild(buttonGroup);
+
+    settingsPopup.appendChild(highlightRow);
+    settingsPopup.appendChild(presetRow);
+
+    // export button
 
     exportJSONBtn = document.createElement("button");
     exportJSONBtn.textContent="Export JSON";
@@ -538,9 +692,9 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         return {
             borderRadius: "10px",
             margin: "2px",
-            padding: "3px 6px",
+            padding: "4px 6px",
             cursor: "pointer",
-            flex: 1
+            flex: "1 100%",
             };
         };
 
@@ -620,17 +774,28 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
 
     applyStyles(confirmBtn, masterButtonStyle());
     applyStyles(cancelBtn, masterButtonStyle());
-    applyStyles(venueSelect, masterButtonStyle());
+    applyStyles(venueSelect, masterButtonStyle(), {
+        padding: "3px 6px"
+    });
 
     applyStyles(themeBtn, masterButtonStyle(), {
         maxWidth: "120px",
         textAlign: "center",
+        padding: "3px 6px",
     });
 
     applyStyles(headerSelect, masterButtonStyle(), {
         maxWidth: "120px",
         textAlign: "center",
+        padding: "3px 6px",
     });
+
+    applyStyles(highlightSelect, masterButtonStyle(), {
+        maxWidth: "120px",
+        textAlign: "center",
+        padding: "3px 6px",
+    });
+
     applyStyles(fontInput, masterButtonStyle(), {
         maxWidth: "104px",
         textAlign: "center",
@@ -639,10 +804,20 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
     applyStyles(layoutSelect, masterButtonStyle(), {
         maxWidth: "120px",
         textAlign: "center",
+        padding: "3px 6px",
     });
 
     applyStyles(exportCSVBtn, masterButtonStyle());
     applyStyles(exportJSONBtn, masterButtonStyle());
+
+    applyStyles(importPresetBtn, masterButtonStyle(), {
+        margin: "0px",
+        width: "100%"
+    });
+    applyStyles(resetPresetBtn, masterButtonStyle(), {
+        margin: "0px",
+        width: "100%"
+    });
 
     applyStyles(bbTextarea, masterPanelStyle(), {
         width: "100%",
@@ -653,8 +828,12 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         marginBottom: "5px"
     });
 
-    applyStyles(sortSelect, masterButtonStyle());
-    applyStyles(catSelect, masterButtonStyle());
+    applyStyles(sortSelect, masterButtonStyle(), {
+    padding: "3px 6px"
+    });
+    applyStyles(catSelect, masterButtonStyle(), {
+    padding: "3px 6px"
+    });
 
     applyStyles(resetRow,{
             display:"flex",
@@ -680,15 +859,12 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         if(confirm("Reset ALL?")){ venues.forEach(v=>saveVenueData(v,{battleCount:0,loot:{}})); updateUI(); }
     };
 
-        switchBtn.onclick = () => {
-    if (venuePopup.style.display === "block") {
-        // Popup is open => close it (like Cancel)
-        venuePopup.style.display = "none";
-    } else {
-        // Popup is closed => open it
-        venuePopup.style.display = "block";
-    }
+switchBtn.onclick = () => {
+        const isOpen = venuePopup.style.display === "block";
+        closeAllPopups(); // close others before toggling
+        venuePopup.style.display = isOpen ? "none" : "block";
     };
+
 
     confirmBtn.onclick=()=>{
         currentVenue=venueSelect.value;
@@ -702,9 +878,12 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         venuePopup.style.display="none";
     };
 
-    cogBtn.onclick = ()=>{
-        settingsPopup.style.display = settingsPopup.style.display==="none"?"block":"none";
+    cogBtn.onclick = () => {
+        const isOpen = settingsPopup.style.display === "block";
+        closeAllPopups(); // close others before toggling
+        settingsPopup.style.display = isOpen ? "none" : "block";
     };
+
 
 // --- Overview
     overviewToggle.onclick=()=>{ overviewVisible=!overviewVisible; updateUI(); };
@@ -750,9 +929,12 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
 
         applyStyles(themeBtn, buttonthemeStyle(theme, fontSize),);
         applyStyles(headerSelect, buttonthemeStyle(theme, fontSize),);
+        applyStyles(highlightSelect, buttonthemeStyle(theme, fontSize),);
         applyStyles(fontInput, buttonthemeStyle(theme, fontSize),);
         applyStyles(exportCSVBtn, buttonthemeStyle(theme, fontSize),);
         applyStyles(exportJSONBtn, buttonthemeStyle(theme, fontSize),);
+        applyStyles(importPresetBtn, buttonthemeStyle(theme, fontSize),);
+        applyStyles(resetPresetBtn, buttonthemeStyle(theme, fontSize),);
 
         applyStyles(sortSelect, buttonthemeStyle(theme, fontSize),);
         applyStyles(catSelect, buttonthemeStyle(theme, fontSize),);
@@ -762,7 +944,6 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         applyStyles(resetAllBtn, buttonthemeStyle(theme, fontSize),);
 
         applyStyles(overviewToggle, buttonthemeStyle(theme, fontSize),);
-
 
         header.innerHTML=`<b>${currentVenue} — Coliseum Tracker</b><br>Wins: ${data.battleCount}<br><br>`;
         bbTextarea.value=formatLootAsBBCode(data.loot,activeCategory,sortMode);
@@ -782,17 +963,36 @@ function formatLootAsBBCode(loot, categoryFilter, sortBy) {
         });
 
         sortSelect.value = sortMode;
-        catSelect.value = activeCategory;
 
+        // --- Build category dropdown (with Highlights dynamic logic)
         catSelect.innerHTML = "";
 
-        categories.forEach(c=>{
-            const opt=document.createElement("option");
-            opt.value=c;
-            opt.textContent=c;
-            if(c===activeCategory) opt.selected=true;
+        // if highlights are off but user still has "Highlights" active, reset to "All"
+        if (highlightMode === "off" && activeCategory === "Highlights") {
+            activeCategory = "All";
+            localStorage.setItem("fr_coli_category", activeCategory);
+        }
+
+        // compute displayed categories
+        const displayedCategories = (() => {
+            const base = [...categories];
+            if (highlightMode === "off") {
+                return base;
+            } else {
+                const rest = base.slice(1);
+                return ["All", "Highlights", ...rest];
+            }
+        })();
+
+        // populate dropdown
+        displayedCategories.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            if (c === activeCategory) opt.selected = true;
             catSelect.appendChild(opt);
         });
+
 
         // Overview Toggle
         overviewContainer.innerHTML = "";
