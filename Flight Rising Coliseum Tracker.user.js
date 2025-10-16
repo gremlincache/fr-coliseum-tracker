@@ -3,7 +3,7 @@
 // @namespace    https://tampermonkey.net/
 // @version      1.3
 // @description  Coliseum tracker with BBCode, categories, sorting, overview, dark and light theme and font sizes.
-// @match        https://flightrising.com/main.php?*
+// @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
 // @run-at       document-start
 // @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/main/itemIndex.js
