@@ -29,7 +29,7 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 4. Similarly, you can filter the tracked loot by category by using the category drop down located next to the sorting drop down. Note that any items that aren't added in the itemIndex yet will **only** show in the category 'All'.
 5. By clicking 'Reset Venue' you will be prompted by a window to confirm if you wish to reset. Resetting the venue will clear the currently selected venue of any loot tracked and wins. Clicking 'Reset All' will reset all venues, regardless of which one is currently selected.
 6. 'Show Overview' will show you the tracked items without the bbcode formatting in two columns.
-7. Settings can be found by clicking the cog symbol in the top right corner of the main window. Settings currently include an option to edit the font size (between 8-24px), as well as a 'Toggle Theme' button to swap between the Light and Dark theme.
+7. Settings can be found by clicking the cog symbol in the top right corner of the main window. Settings currently include an option to edit the font size (between 8-24px), as well as a 'Toggle Theme' button to swap between the Light and Dark theme, whether to display category headers, how the BBCode should be displayed (columns/one item per line/one big block), as well as settings related to the highlight function.
 8. In the Settings popup, you will also find export options, which when clicked on will download a file that contains all the currently tracked loot in the chosen format. Currently this only displays the items tracked with IDs and not names. The default file name is 'FR_Coliseum_Data'.
 9. The tracker will automatically load the external `itemIndex.js` which connects the IDs that are shown in the WebSocket message with the item names. **This index was created and is maintained manually by me to ensure no scraping occurs**, but this also means sometimes items might be missing from the index.
 
@@ -37,9 +37,12 @@ A Tampermonkey userscript to track Coliseum wins and loot in Flight Rising. **Th
 
 - Users will automatically get the updated item list the next time Tampermonkey refreshes the script from GitHub. Make sure that "Externals" update interval in your Tampermonkey settings is set to anything other than "Never" to actually get these updates! Hopefully I get around to actually keeping it updaded lmao.
 
+## Highlighting Items
+- The default highlight preset highlights eggs, boss familiars, and eliminate drops. You can download the [examplePreset](https://github.com/gremlincache/fr-coliseum-tracker/blob/main/examplePreset.json) as a guide for creating your own, or simply create a new JSON file that contains the item IDs as strings. **IMPORANT TO NOTE** all IDs must be in quotes, and separated by a comma! It does not matter if they are all on one line, one ID per line, or separated into whichever categories you want. 
+
 ## Troubleshooting
 - If I fuck up the formatting in itemIndex, the entire script will decide to nope out. If an update has been pushed that edites the itemIndex and you notice the script stopped working, make sure you refresh the "Externals" update interval once a fix has been implemented. To confirm if this is an issue that is causing the window to disappear, edit the code in Tampermonkey (this only edits your local copy) and remove the line that starts with @require. If removing this line makes the window re-appear, then you know the itemIndex is the culprit. Sorry!
-- The script only appears on the coliseum battle pages, which is intended. (specifically any part of the site that starts with https://flightrising.com/main.php? as the URL)
+- The script only appears on the coliseum battle pages, which is intended. (specifically any part of the site that starts with https://flightrising.com/main.php?p=battle as the URL). 
 - Yeah tbh idk how to troubleshoot this. pray? and let me know in the feedback form so I can poke at it ..b I am not an experienced developer
 
 ## Feedback and issues
