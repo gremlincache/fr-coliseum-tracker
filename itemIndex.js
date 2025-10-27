@@ -2879,14 +2879,14 @@
 59268: {name: "Candy Stars", category: "Other"},
 
 // TEMPORARY FESTIVAL ITEMS (CHESTS)
-65335: {name: "Bewitching Starmage Chest", category: "Other"},
-65336: {name: "Oculus Chest", category: "Other"},
-65337: {name: "Shaded Deceit Chest", category: "Other"},
-65338: {name: "Exoplanet Enigma Chest", category: "Other"},
-65339: {name: "Strange Mutations Chest", category: "Other"},
-65340: {name: "Cosmos Lux Chest", category: "Other"},
-65341: {name: "Voidstalker Chest", category: "Other"},
-65342: {name: "Starlit Strand Chest", category: "Other"},
+65712: {name: "Yesterday's Vision Chest", category: "Other"},
+65713: {name: "Sanguine Veil Chest", category: "Other"},
+65714: {name: "Rage Cage Chest", category: "Other"},
+65715: {name: "Macabre Chest", category: "Other"},
+65716: {name: "Convergeant Evolution Chest", category: "Other"},
+65717: {name: "White Rot Riot Chest", category: "Other"},
+65718: {name: "Riot Like Rotfaerie Chest", category: "Other"},
+65719: {name: "Fluorescent Rot Chest", category: "Other"},
 
 // BATTLE
 
@@ -2980,4 +2980,5 @@
 
     };
 })();
+
 
