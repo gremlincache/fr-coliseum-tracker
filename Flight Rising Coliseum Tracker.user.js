@@ -164,11 +164,11 @@
             let output = result + "[columns]\n";
             formatted.forEach((item, i) => {
                 const [base, amount] = item.split(" x");
-                output += `${base}\n x${amount}`;
+                output += `[center]${base}\n x${amount}`;
                 // only append nextcol if there's a next item
                 if (i < formatted.length - 1) {
                 if ((i + 1) % 6 === 0) output += "\n[/columns]\n[columns]\n";
-                else output += "\n[nextcol]\n";
+                else output += "\n[nextcol][center]\n";
                 }
             });
             if (!output.endsWith("[/columns]")) output += "[/columns]";
@@ -189,7 +189,7 @@
         let block = "[columns]\n";
         formatted.forEach((item, i) => {
             const [base, amount] = item.split(" x");
-            block += `${base}\n x${amount}`;
+            block += `[center]${base}\n x${amount}`;
             if (i < formatted.length - 1) {
             if ((i + 1) % 6 === 0) block += "\n[/columns]\n[columns]\n";
             else block += "\n[nextcol]\n";
