@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flight Rising Coliseum Tracker
 // @namespace    https://tampermonkey.net/
-// @version      1.3
+// @version      1.3.1
 // @description  Coliseum tracker with BBCode, categories, sorting, overview, dark and light theme and font sizes.
 // @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
@@ -13,6 +13,10 @@
 
 (function() {
     'use strict';
+
+    // --- Prevent double execution
+    if (window.hasRunColiTracker) return;
+    window.hasRunColiTracker = true;
 
     // --- External itemIndex
     const itemIndex = window.itemIndex;
@@ -119,6 +123,19 @@
             const co = categoryOrder(a.category) - categoryOrder(b.category);
             return co !== 0 ? co : Number(a.id) - Number(b.id);
             });
+        } else if (sortBy === "amount") {
+            entries.sort((a, b) => {
+            const amt = b.amount - a.amount; // bigger amounts first
+             if (amt !== 0) return amt;
+            // tie → alphabetical
+            return a.name.localeCompare(b.name);
+            });
+        } else if (sortBy === "category-amount") {
+            entries.sort((a, b) => {
+                const catOrder = categoryOrder(a.category) - categoryOrder(b.category);
+                if (catOrder !== 0) return catOrder;
+                return a.name.localeCompare(b.name);
+            });
         }
 
         // highlights
@@ -151,12 +168,14 @@
         if (categoryFilter === "All" && highlightMode !== "off" && highlights.length) {
             if (headerMode !== "none") result += `[b]Highlights[/b]\n`;
             // if exclusive, highlights are already not in entriesToUse; if duplicate they will also appear later
-            highlights.forEach(h => result += formatEntry(h) + "\n");
+            for (const h of highlights) {
+                result += formatEntry(h) + "\n";
+            }
             result += "\n";
         }
 
         // flat list (no headers) when not sorting by category
-        if (sortBy === "name" || sortBy === "id") {
+        if (sortBy === "name" || sortBy === "id" || sortBy === "amount") {
             const formatted = filtered.map(formatEntry);
             if (bbcodeLayout === "lines") return result + formatted.join("\n");
             if (bbcodeLayout === "block") return result + formatted.join(" ");
@@ -277,6 +296,8 @@
     updateUI();
     }
 
+    if (!window.coliTrackerWSHooked) {
+    window.coliTrackerWSHooked = true;
     // --- WebSocket Patch
     const OriginalWebSocket = window.WebSocket;
     window.WebSocket = function(url,...rest){
@@ -296,6 +317,7 @@
         }
         return ws;
     };
+    }
 
     // --- UpdateUI declaring
     let updateUI;
@@ -950,14 +972,16 @@ switchBtn.onclick = () => {
 
         // Sorting & Category
         sortSelect.innerHTML = "";
-        ["name", "id", "category-name", "category-id"].forEach(s => {
+        ["name", "id", "amount", "category-name", "category-id", "category-amount"].forEach(s => {
             const opt = document.createElement("option");
             opt.value = s;
             opt.textContent =
                 s === "name" ? "Sort A–Z" :
                 s === "id" ? "Sort by ID" :
+                s === "amount" ? "Sort by Amount" :
                 s === "category-name" ? "Category + A–Z" :
-                "Category + ID";
+                s === "category-id" ? "Category + ID" :
+                "Category + Amount";
             if (s === sortMode) opt.selected = true;
             sortSelect.appendChild(opt);
         });
