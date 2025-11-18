@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flight Rising Coliseum Tracker
 // @namespace    https://tampermonkey.net/
-// @version      1.3.1
+// @version      1.3.2
 // @description  Coliseum tracker with BBCode, categories, sorting, overview, dark and light theme and font sizes.
 // @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
@@ -102,7 +102,7 @@
             };
         });
 
-        // categories ordering helper (use the same categories array you had)
+        // categories ordering helper (use the same categories array)
         function categoryOrder(cat) {
             const idx = categories.indexOf(cat);
             return idx === -1 ? categories.length : idx;
@@ -134,6 +134,9 @@
             entries.sort((a, b) => {
                 const catOrder = categoryOrder(a.category) - categoryOrder(b.category);
                 if (catOrder !== 0) return catOrder;
+
+                const amt = b.amount - a.amount; // biggest first
+                if (amt !== 0) return amt;
                 return a.name.localeCompare(b.name);
             });
         }
@@ -164,12 +167,35 @@
             return `[item=${e.name}] x${e.amount}`;
         }
 
+        function formatEntryPlain(e) {
+            if (!itemIndex[e.id]?.name) return `${e.id} x${e.amount}`;
+            return `${e.name} x${e.amount}`;
+        }
+
         // add highlight block at top when viewing All AND highlightMode isn't off
         if (categoryFilter === "All" && highlightMode !== "off" && highlights.length) {
-            if (headerMode !== "none") result += `[b]Highlights[/b]\n`;
+            if (headerMode !== "none" && bbcodeLayout !== "plain") result += `[b]Highlights[/b]\n`;
+            if (headerMode !== "none" && bbcodeLayout == "plain") result += `Highlights\n`;
+            const highlightPlainFormatted = highlights.map(formatEntryPlain);
+            const highlightFormatted = highlights.map(formatEntry);
+
             // if exclusive, highlights are already not in entriesToUse; if duplicate they will also appear later
-            for (const h of highlights) {
-                result += formatEntry(h) + "\n";
+            if (bbcodeLayout === "plain") result += highlightPlainFormatted.join(", ");
+            if (bbcodeLayout === "lines") result += highlightFormatted.join("\n");
+            if (bbcodeLayout === "block") result += highlightFormatted.join(" ");
+            if (bbcodeLayout === "columns") {
+                let block = "[columns]";
+                highlightFormatted.forEach((item, i) => {
+                    const [base, amount] = item.split(" x");
+                    block += `[center]${base}\n x${amount}`;
+                    // only append nextcol if there's a next item
+                    if (i < highlightFormatted.length - 1) {
+                        if ((i + 1) % 6 === 0) block += "[/columns]\n[columns]";
+                        else block += "[nextcol]";
+                    }
+                });
+                if (!block.endsWith("[/columns]")) block += "[/columns]";
+                result += block;
             }
             result += "\n";
         }
@@ -177,23 +203,25 @@
         // flat list (no headers) when not sorting by category
         if (sortBy === "name" || sortBy === "id" || sortBy === "amount") {
             const formatted = filtered.map(formatEntry);
+            const formattedPlain = filtered.map(formatEntryPlain);
             if (bbcodeLayout === "lines") return result + formatted.join("\n");
             if (bbcodeLayout === "block") return result + formatted.join(" ");
             if (bbcodeLayout === "columns") {
-            let output = result + "[columns]\n";
-            formatted.forEach((item, i) => {
-                const [base, amount] = item.split(" x");
-                output += `[center]${base}\n x${amount}`;
-                // only append nextcol if there's a next item
-                if (i < formatted.length - 1) {
-                if ((i + 1) % 6 === 0) output += "\n[/columns]\n[columns]\n";
-                else output += "\n[nextcol][center]\n";
-                }
-            });
-            if (!output.endsWith("[/columns]")) output += "[/columns]";
-            return output;
+                let output = result + "[columns]";
+                formatted.forEach((item, i) => {
+                    const [base, amount] = item.split(" x");
+                    output += `[center]${base}\n x${amount}`;
+                    // only append nextcol if there's a next item
+                    if (i < formatted.length - 1) {
+                        if ((i + 1) % 6 === 0) output += "[/columns]\n[columns]";
+                        else output += "[nextcol]";
+                    }
+                });
+                if (!output.endsWith("[/columns]")) output += "[/columns]";
+                return output;
+            }
+            if (bbcodeLayout === "plain") return result + formattedPlain.join(", ");
         }
-    }
 
     // grouped by category (category-name or category-id)
     let currentCat = null;
@@ -202,21 +230,23 @@
     function flushGroup() {
         if (!currentGroup.length) return;
         const formatted = currentGroup.map(formatEntry);
+        const formattedPlain = currentGroup.map(formatEntryPlain);
         if (bbcodeLayout === "lines") result += formatted.join("\n") + "\n";
         else if (bbcodeLayout === "block") result += formatted.join(" ") + "\n";
         else if (bbcodeLayout === "columns") {
-        let block = "[columns]\n";
+        let block = "[columns]";
         formatted.forEach((item, i) => {
             const [base, amount] = item.split(" x");
             block += `[center]${base}\n x${amount}`;
             if (i < formatted.length - 1) {
-            if ((i + 1) % 6 === 0) block += "\n[/columns]\n[columns]\n";
-            else block += "\n[nextcol]\n";
+            if ((i + 1) % 6 === 0) block += "[/columns]\n[columns]";
+            else block += "[nextcol]";
             }
         });
         if (!block.endsWith("[/columns]")) block += "[/columns]";
         result += block + "\n";
         }
+        else if (bbcodeLayout === "plain") result += formattedPlain.join(", ") + "\n";
         currentGroup = [];
     }
 
@@ -225,7 +255,14 @@
         flushGroup();
         currentCat = e.category;
         const showHeader = headerMode === "always" || (headerMode === "all" && categoryFilter === "All");
-        if (showHeader && headerMode !== "none") result += `\n[b]${currentCat}[/b]\n`;
+        if (showHeader && headerMode !== "none") {
+            if (bbcodeLayout === "plain") {
+            result += `\n${currentCat}\n`;
+            }
+            else {
+            result += `\n[b]${currentCat}[/b]\n`;
+            }
+        }
         }
         currentGroup.push(e);
     });
@@ -296,9 +333,9 @@
     updateUI();
     }
 
+        // --- WebSocket Patch
     if (!window.coliTrackerWSHooked) {
     window.coliTrackerWSHooked = true;
-    // --- WebSocket Patch
     const OriginalWebSocket = window.WebSocket;
     window.WebSocket = function(url,...rest){
         const ws = new OriginalWebSocket(url,...rest);
@@ -494,7 +531,7 @@
 
     const highlightPresetLabel = document.createElement("span");
     highlightPresetLabel.textContent = "Highlight Preset:";
-    applyStyles(highlightLabel, {
+    applyStyles(highlightPresetLabel, {
             display: "inline-block",
             textAlign: "left",
         });
@@ -554,10 +591,11 @@
     })
 
     themeBtn.onchange = ()=>{
-        themeMode = themeMode==="dark"?"light":"dark";
+        themeMode = themeBtn.value;
         localStorage.setItem("fr_coli_theme",themeMode);
         updateUI();
     };
+
     themeRow.appendChild(themeLabel);
     themeRow.appendChild(themeBtn);
 
@@ -580,22 +618,23 @@
     };
 
     let layoutSelect = document.createElement("select");
-    ["lines","block","columns"].forEach(mode => {
+    ["lines","block","columns", "plain"].forEach(mode => {
     const opt = document.createElement("option");
     opt.value = mode;
     opt.textContent =
         mode === "lines" ? "One per line" :
         mode === "block" ? "Block" :
-        "Columns";
+        mode === "columns" ? "Columns" :
+        "Plaintext";
     if (mode === bbcodeLayout) opt.selected = true;
     layoutSelect.appendChild(opt);
     });
+
     layoutSelect.onchange = () => {
-    bbcodeLayout = layoutSelect.value;
-    localStorage.setItem("fr_coli_bbcodeLayout", bbcodeLayout);
-    updateUI();
+        bbcodeLayout = layoutSelect.value;
+        localStorage.setItem("fr_coli_bbcodeLayout", bbcodeLayout);
+        updateUI();
     };
-    settingsPopup.appendChild(layoutSelect);
 
     headerRow.appendChild(headerLabel);
     headerRow.appendChild(headerSelect);
@@ -918,7 +957,6 @@ switchBtn.onclick = () => {
         // Panel & Settings dynamic Styling
 
         applyStyles(toggleBtn, buttonthemeStyle(theme, fontSize),);
-        applyStyles(fontInput, buttonthemeStyle(theme, fontSize),);
 
         applyStyles(panel, panelthemeStyle(theme, fontSize),{
             background: theme.bg.replace("rgb", "rgba").replace(")", ",0.75)"),
