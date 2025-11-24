@@ -2879,14 +2879,14 @@
 59268: {name: "Candy Stars", category: "Other"},
 
 // TEMPORARY FESTIVAL ITEMS (CHESTS)
-65712: {name: "Yesterday's Vision Chest", category: "Other"},
-65713: {name: "Sanguine Veil Chest", category: "Other"},
-65714: {name: "Rage Cage Chest", category: "Other"},
-65715: {name: "Macabre Chest", category: "Other"},
-65716: {name: "Convergeant Evolution Chest", category: "Other"},
-65717: {name: "White Rot Riot Chest", category: "Other"},
-65718: {name: "Riot Like Rotfaerie Chest", category: "Other"},
-65719: {name: "Fluorescent Rot Chest", category: "Other"},
+66111: {name: "Dragonscale Mineral Chest", category: "Other"},
+66112: {name: "Gem Eater Chest", category: "Other"},
+66113: {name: "Fossilback Explorer Chest", category: "Other"},
+66114: {name: "Gem Hunting Chest", category: "Other"},
+66115: {name: "Road to Nowhere Chest", category: "Other"},
+66116: {name: "Reemerging History Chest", category: "Other"},
+66117: {name: "Long, Long Ago Chest", category: "Other"},
+66118: {name: "Play of Color Chest", category: "Other"},
 
 // BATTLE
 
@@ -2980,5 +2980,6 @@
 
     };
 })();
+
 
 
