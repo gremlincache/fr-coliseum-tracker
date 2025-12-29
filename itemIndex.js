@@ -1139,6 +1139,8 @@
 1796: {name: "Heartred Croaker", category: "Familiars"},
 1929: {name: "Mistwatch Shellion", category: "Familiars"},
 1930: {name: "Shellion", category: "Familiars"},
+2258: {name: "Fungalhoof Cerdae", category: "Familiars"},
+2259: {name: "Umberhorn Cerdae", category: "Familiars"},
 2393: {name: "Coral Carpenter", category: "Familiars"},
 2394: {name: "Bumble", category: "Familiars"},
 2420: {name: "Greatshell", category: "Familiars"},
@@ -1802,9 +1804,11 @@
 22682: {name: "Twilight Rose Thorn Wing Tangle", category: "Apparel"},
 25027: {name: "Blooming Woodbasket", category: "Apparel"},
 25028: {name: "Blooming Woodtrail", category: "Apparel"},
+25029: {name: "Blooming Woodmask", category: "Apparel"},
 25030: {name: "Blooming Woodguard", category: "Apparel"},
 25031: {name: "Blooming Woodwing", category: "Apparel"},
 25032: {name: "Blooming Woodtreads", category: "Apparel"},
+25033: {name: "Blooming Woodbrace", category: "Apparel"},
 26275: {name: "Swamp Kelpie Mane", category: "Apparel"},
 26534: {name: "Date Plumed Corsage", category: "Apparel"},
 26535: {name: "Date Plumed Jabbot", category: "Apparel"},
@@ -2548,7 +2552,7 @@
 7305: {name: "Death Head Crate", category: "Other"},
 7306: {name: "Emerald Webwing Crate", category: "Other"},
 7690: {name: "Strange Chest", category: "Other"},
-7693: {name: "Multi-Lense Magnifier", category: "Other"},
+7693: {name: "Multi-Lens Magnifier", category: "Other"},
 7694: {name: "Mirror", category: "Other"},
 7695: {name: "Night Flame", category: "Other"},
 7696: {name: "Nocturne Puppet", category: "Other"},
@@ -2598,14 +2602,18 @@
 15105: {name: "Dreameater's Crate", category: "Other"},
 15106: {name: "Fungalhoof Crate", category: "Other"},
 15107: {name: "Gale Crate", category: "Other"},
+15108: {name: "Raptorik Crate", category: "Other"},
+15109: {name: "Tengu Crate", category: "Other"},
 15110: {name: "Light's Trick Crate", category: "Other"},
+15111: {name: "Trick of the Light Crate", category: "Other"},
+15112: {name: "Umbra Wolf Crate", category: "Other"},
 15113: {name: "Pulsating Pendant", category: "Other"},
 15114: {name: "Softly Glowing Pendant", category: "Other"},
 15115: {name: "Azure Lure", category: "Other"},
 15116: {name: "Fisher's Companion", category: "Other"},
 15294: {name: "Crystal Ball", category: "Other"},
 15295: {name: "Hourglass", category: "Other"},
-15296: {name: "Lepordae Guise", category: "Other"},
+15296: {name: "Leporidae Guise", category: "Other"},
 15297: {name: "Weathered Grimoire", category: "Other"},
 15572: {name: "Toolbox", category: "Other"},
 16024: {name: "Hydra Scales Crate", category: "Other"},
@@ -2980,6 +2988,7 @@
 
     };
 })();
+
 
 
 
