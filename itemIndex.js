@@ -645,7 +645,17 @@
 58437: {name: "Saddled Jackal", category: "Food"},
 59271: {name: "Pygmy Seahorse", category: "Food"},
 59272: {name: "Starfall Seahorse", category: "Food"},
-
+67027: {name: "Golden Camellia", category: "Food"},
+67028: {name: "Red Camellia", category: "Food"},
+67035: {name: "Blazeback Frogfish", category: "Food"},
+67036: {name: "Rosy Frogfish", category: "Food"},
+67092: {name: "Tuxedo Slug", category: "Food"},
+67093: {name: "Tiger Slug", category: "Food"},
+67098: {name: "Snowy Macaque", category: "Food"},
+67099: {name: "Dusky Macaque", category: "Food"},
+67102: {name: "Mistwatcher Beetle", category: "Food"},
+67103: {name: "Reedhollow Pinch", category: "Food"},
+         
 // MATERIALS
 
 177: {name: "Clay", category: "Materials"},
@@ -1022,6 +1032,10 @@
 58419: {name: "Vertebrae Segment", category: "Materials"},
 58438: {name: "Bluestone Pigment", category: "Materials"},
 58439: {name: "Body Paint", category: "Materials"},
+67090: {name: "Petrified Wood", category: "Materials"},
+67091: {name: "Opalized Wood", category: "Materials"},
+67096: {name: "Glazed Matcha Bowl", category: "Materials"},
+67097: {name: "Dusky Tea Set", category: "Materials"},
 
 // FAMILIARS
 
@@ -1597,6 +1611,16 @@
 58251: {name: "Murder Cage", category: "Familiars"},
 59269: {name: "Seastar", category: "Familiars"},
 59270: {name: "Spotted Seastar", category: "Familiars"},
+67025: {name: "Dart-tail Cockatrice", category: "Familiars"},
+67026: {name: "Golden Cockatrice", category: "Familiars"},
+67033: {name: "Blazewing Croaker", category: "Familiars"},
+67034: {name: "Warbletongue Croaker", category: "Familiars"},
+67088: {name: "Tuxedo Felislug", category: "Familiars"},
+67089: {name: "Calico Felislug", category: "Familiars"},
+67094: {name: "Cloudrider", category: "Familiars"},
+67095: {name: "Thundercloud Herald", category: "Familiars"},
+67100: {name: "Talonok Mistwatcher", category: "Familiars"},
+67101: {name: "Reedhollow Traveller", category: "Familiars"},
 
 // APPAREL
 
@@ -2434,6 +2458,8 @@
 60301: {name: "Ancient Gene Parchment: Papillon", category: "Specialty"},
 60302: {name: "Ancient Gene Parchment: Swallowtail", category: "Specialty"},
 61507: {name: "Scene: Volcanic Vents", category: "Specialty"},
+67031: {name: "Vista: Bamboo Falls II", category: "Specialty"},
+67032: {name: "Scene: Bamboo Falls", category: "Specialty"},
 
 // OTHER
 
@@ -2885,6 +2911,12 @@
 58429: {name: "Bone Beetle Pendent", category: "Other"},
 59267: {name: "Sweet Wishes", category: "Other"},
 59268: {name: "Candy Stars", category: "Other"},
+67029: {name: "Embroidered Satin", category: "Other"},
+67030: {name: "Cockatrice Embroidery", category: "Other"},
+67086: {name: "Croaker Enamel Pin", category: "Other"},
+67087: {name: "Silver Enamel Pin", category: "Other"},
+67104: {name: "Mistwatcher Jacket", category: "Other"},
+67105: {name: "Reedhollow Coat", category: "Other"},
 
 // TEMPORARY FESTIVAL ITEMS (CHESTS)
 66111: {name: "Dragonscale Mineral Chest", category: "Other"},
@@ -2988,6 +3020,7 @@
 
     };
 })();
+
 
 
 
