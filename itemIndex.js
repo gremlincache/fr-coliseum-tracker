@@ -2436,9 +2436,9 @@
 54451: {name: "Ancient Gene Parchment: Candycane", category: "Specialty"},
 54452: {name: "Ancient Gene Parchment: Diamond", category: "Specialty"},
 54455: {name: "Ancient Gene Parchment: Phantom", category: "Specialty"},
-54456: {name: "Ancient Gene Parchment: Sailfish", category: "Specialty"},
+54456: {name: "Primary Gene: Sailfish", category: "Specialty"},
 54457: {name: "Ancient Gene Parchment: Loop", category: "Specialty"},
-54458: {name: "Ancient Gene Parchment: Marlin", category: "Specialty"},
+54458: {name: "Secondary Gene: Marlin", category: "Specialty"},
 54460: {name: "Ancient Gene Parchment: Spade", category: "Specialty"},
 54461: {name: "Ancient Gene Parchment: Spirit", category: "Specialty"},
 54462: {name: "Ancient Gene Parchment: Sugarplum", category: "Specialty"},
@@ -3020,6 +3020,7 @@
 
     };
 })();
+
 
 
 
