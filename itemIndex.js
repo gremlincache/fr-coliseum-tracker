@@ -2919,14 +2919,14 @@
 67105: {name: "Reedhollow Coat", category: "Other"},
 
 // TEMPORARY FESTIVAL ITEMS (CHESTS)
-66111: {name: "Dragonscale Mineral Chest", category: "Other"},
-66112: {name: "Gem Eater Chest", category: "Other"},
-66113: {name: "Fossilback Explorer Chest", category: "Other"},
-66114: {name: "Gem Hunting Chest", category: "Other"},
-66115: {name: "Road to Nowhere Chest", category: "Other"},
-66116: {name: "Reemerging History Chest", category: "Other"},
-66117: {name: "Long, Long Ago Chest", category: "Other"},
-66118: {name: "Play of Color Chest", category: "Other"},
+67222: {name: "Crystallize Chest", category: "Other"},
+67223: {name: "It's Frickin Wimdy Chest", category: "Other"},
+67224: {name: "Midnight Sun Chest", category: "Other"},
+67225: {name: "Boreal Hunt Chest", category: "Other"},
+67226: {name: "Frigid Fugitive Chest", category: "Other"},
+67227: {name: "Cold Soul Chest", category: "Other"},
+67228: {name: "We Hunger Chest", category: "Other"},
+67229: {name: "Frostbite Flair Chest", category: "Other"},
 
 // BATTLE
 
@@ -3020,6 +3020,7 @@
 
     };
 })();
+
 
 
 
