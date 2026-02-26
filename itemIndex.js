@@ -2919,14 +2919,15 @@
 67105: {name: "Reedhollow Coat", category: "Other"},
 
 // TEMPORARY FESTIVAL ITEMS (CHESTS)
-67222: {name: "Crystallize Chest", category: "Other"},
-67223: {name: "It's Frickin Wimdy Chest", category: "Other"},
-67224: {name: "Midnight Sun Chest", category: "Other"},
-67225: {name: "Boreal Hunt Chest", category: "Other"},
-67226: {name: "Frigid Fugitive Chest", category: "Other"},
-67227: {name: "Cold Soul Chest", category: "Other"},
-67228: {name: "We Hunger Chest", category: "Other"},
-67229: {name: "Frostbite Flair Chest", category: "Other"},
+        
+67580: {name: "Moonglow Ballet Chest", category: "Other"},
+67581: {name: "Nice to Se-y-e You Chest", category: "Other"},
+67582: {name: "Change of Heart Chest", category: "Other"},
+67583: {name: "One Card Too Lucky Chest", category: "Other"},
+67584: {name: "Wilting Reach Chest", category: "Other"},
+67585: {name: "Murkborn Twin Chest", category: "Other"},
+67586: {name: "Midnight Keeper Chest", category: "Other"},
+67587: {name: "Secrets of the Forest Chest", category: "Other"},
 
 // BATTLE
 
@@ -3020,6 +3021,7 @@
 
     };
 })();
+
 
 
 
