@@ -2422,6 +2422,7 @@
 46886: {name: "Vista: Drakeharvest", category: "Specialty"},
 48025: {name: "Vista: Frigidfin Expedition", category: "Specialty"},
 49374: {name: "Vista: Springswarm", category: "Specialty"},
+50884: {name: "Vista: Sunparched Prowl", category: "Specialty"},
 50938: {name: "Tertiary Gene: Polkadot", category: "Specialty"},
 51499: {name: "Vista: Talonok", category: "Specialty"},
 51937: {name: "Scene: Silk-Strewn Wreckage", category: "Specialty"},
@@ -3021,6 +3022,7 @@
 
     };
 })();
+
 
 
 
