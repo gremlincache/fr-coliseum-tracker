@@ -13,8 +13,7 @@
 
 (function () {
     'use strict';
-    //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!! 
-    
+     //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!! 
     // --- Prevent double execution
     if (window.hasRunColiTracker) return;
     window.hasRunColiTracker = true;
@@ -27,7 +26,7 @@
         "498",
         "1222", "7594", "7600", "7882", "7883", "10231", "10233", "11522", "11525", "13428", "13430", "16481", "16487", "16911", "16912", "17507", "17508", "20145", "20157", "21430", "21431", "23842", "23844", "25776", "25777", "28235", "28236", "34765", "34766", "36300", "36301", "51945", "51946"];
 
-    // --- Festival item ID sets (manually curated, not user-editable)
+    // --- Festival item ID sets
     const festivalItemIds = {
         elemental: ["882", "887", "888", "889", "890", "891", "892", "893", "894", "895", "896"],
         micro: ["27664", "27665", "28572", "28573", "28574", "28575", "29247", "29248", "29326", "29407", "29408", "29409", "30385", "30386", "30387", "30388", "31625", "31626", "35959", "38285", "38286", "38287", "38288", "38289", "38290", "39895", "41418", "42541", "42988", "42989", "42990", "42991", "43685", "46518", "46519", "46520", "46886", "47012", "48025", "49374", "50884", "52126", "52127", "53051", "53052", "55280", "55281", "57528", "57529"],
@@ -79,22 +78,22 @@
     // --- Theme definitions
     const defaultThemes = {
         dark: {
-            "--gc-frame": "#7a0404", "--gc-icons": "#FFC600", "--gc-dividers": "#0084FF",
-            "--gc-header-text": "#67FFA1", "--gc-main": "#FF00EE", "--gc-main-accent": "#009428",
-            "--gc-main-text": "#00FF99", "--gc-border": "#FF9900", "--gc-button": "#00FF08",
-            "--gc-button-text": "#FF00E5", "--gc-deleteColor": "#ff0000", "--gc-deleteColor-accent": "#ffffff",
-            "--gc-highlightColor": "#fffb00", "--gc-contentDivider": "#A100FF",
-            "--gc-overviewHeader": "#b39aa6", "--gc-overviewHeader-accent": "#800e4d",
-            "--gc-venueHeader": "#b39aa6", "--gc-venueHeader-accent": "#b39aa6", "--gc-entryIcons": "#ffffff",
+            "--gc-frame": "#121212", "--gc-icons": "#e0e0e0", "--gc-dividers": "#e0e0e0",
+            "--gc-header-text": "#e0e0e0", "--gc-main": "#2e2e2e", "--gc-main-accent": "#212121",
+            "--gc-main-text": "#e0e0e0", "--gc-border": "#000000", "--gc-button": "#e0e0e0",
+            "--gc-button-text": "#212121", "--gc-deleteColor": "#b80000", "--gc-deleteColor-accent": "#e0e0e0",
+            "--gc-highlightColor": "#d99b45", "--gc-contentDivider": "#121212",
+            "--gc-overviewHeader": "#dedede", "--gc-overviewHeader-accent": "#121212",
+            "--gc-venueHeader": "#ffffff", "--gc-venueHeader-accent": "#292929", "--gc-entryIcons": "#c2c2c2",
         },
         light: {
-            "--gc-frame": "#7a0404", "--gc-icons": "#FFC600", "--gc-dividers": "#0084FF",
-            "--gc-header-text": "#67FFA1", "--gc-main": "#FF00EE", "--gc-main-accent": "#009428",
-            "--gc-main-text": "#00FF99", "--gc-border": "#FF9900", "--gc-button": "#00FF08",
-            "--gc-button-text": "#FF00E5", "--gc-deleteColor": "#ff0000", "--gc-deleteColor-accent": "#ffffff",
-            "--gc-highlightColor": "#fffb00", "--gc-contentDivider": "#A100FF",
-            "--gc-overviewHeader": "#b39aa6", "--gc-overviewHeader-accent": "#800e4d",
-            "--gc-venueHeader": "#b39aa6", "--gc-venueHeader-accent": "#b39aa6", "--gc-entryIcons": "#ffffff",
+            "--gc-frame": "#fafafa", "--gc-icons": "#454545", "--gc-dividers": "#c2c2c2",
+            "--gc-header-text": "#454545", "--gc-main": "#f2f2f2", "--gc-main-accent": "#e3e3e3",
+            "--gc-main-text": "#454545", "--gc-border": "#f7f7f7", "--gc-button": "#454545",
+            "--gc-button-text": "#f7f7f7", "--gc-deleteColor": "#d93636", "--gc-deleteColor-accent": "#f2f2f2",
+            "--gc-highlightColor": "#ffaf24", "--gc-contentDivider": "#c7c7c7",
+            "--gc-overviewHeader": "#f2f2f2", "--gc-overviewHeader-accent": "#454545",
+            "--gc-venueHeader": "#454545", "--gc-venueHeader-accent": "#f2f2f2", "--gc-entryIcons": "#949494",
         }
     };
 
