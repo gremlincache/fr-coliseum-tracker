@@ -77,7 +77,7 @@
 
     // --- Theme definitions
     const defaultThemes = {
-        dark: {
+        Dark: {
             "--gc-frame": "#121212", "--gc-icons": "#e0e0e0", "--gc-dividers": "#e0e0e0",
             "--gc-header-text": "#e0e0e0", "--gc-main": "#2e2e2e", "--gc-main-accent": "#212121",
             "--gc-main-text": "#e0e0e0", "--gc-border": "#000000", "--gc-button": "#e0e0e0",
@@ -86,7 +86,7 @@
             "--gc-overviewHeader": "#dedede", "--gc-overviewHeader-accent": "#121212",
             "--gc-venueHeader": "#ffffff", "--gc-venueHeader-accent": "#292929", "--gc-entryIcons": "#c2c2c2",
         },
-        light: {
+        Light: {
             "--gc-frame": "#fafafa", "--gc-icons": "#454545", "--gc-dividers": "#c2c2c2",
             "--gc-header-text": "#454545", "--gc-main": "#f2f2f2", "--gc-main-accent": "#e3e3e3",
             "--gc-main-text": "#454545", "--gc-border": "#f7f7f7", "--gc-button": "#454545",
@@ -110,7 +110,7 @@
     ];
 
     let savedThemes = JSON.parse(localStorage.getItem("fr_coli_themes") ?? "{}");
-    let activeThemeName = localStorage.getItem("fr_coli_activeTheme") ?? "dark";
+    let activeThemeName = localStorage.getItem("fr_coli_activeTheme") ?? "Dark";
 
     const collapseStates = JSON.parse(localStorage.getItem("fr_coli_collapseStates") ?? "{}");
     function saveCollapseStates() { localStorage.setItem("fr_coli_collapseStates", JSON.stringify(collapseStates)); }
