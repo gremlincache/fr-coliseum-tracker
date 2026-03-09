@@ -13,7 +13,7 @@
 
 (function () {
     'use strict';
-     //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!!
+    //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!!
     // --- Prevent double execution
     if (window.hasRunColiTracker) return;
     window.hasRunColiTracker = true;
@@ -70,6 +70,7 @@
     let iconMode = localStorage.getItem("fr_coli_iconMode") ?? "both";
     let toggleCorner = localStorage.getItem("fr_coli_toggleCorner") ?? "top-right";
     let toggleStyle = localStorage.getItem("fr_coli_toggleStyle") ?? "text";
+    let bbcodeHeaderStyle = localStorage.getItem("fr_coli_bbcodeHeaderStyle") ?? "bold-center";
     let activeQuests = JSON.parse(localStorage.getItem("fr_coli_activeQuests") ?? "[]");
     let completedQuests = JSON.parse(localStorage.getItem("fr_coli_completedQuests") ?? "[]");
     let savedFont = localStorage.getItem("fr_coli_fontFamily") ?? "Verdana, Geneva, sans-serif";
@@ -266,32 +267,47 @@
         }
 
         function formatHeader(cat) {
-            if (bbcodeLayout === "plain") return `${cat}\n`;
-            return `[b]${cat}[/b]\n`;
+            if (bbcodeHeaderStyle === "plain" || bbcodeLayout === "plain") return `${cat}\n`;
+            return `[center][b]${cat}[/b][/center]\n`;
         }
+
+        // Wraps loot content with a styled header, or just the content if no header applies.
+        function formatSection(title, lootStr, useHidden) {
+            if (!title || !showHeader()) return lootStr + "\n\n";
+            if (bbcodeLayout === "plain") return `${title}\n${lootStr}\n\n`;
+            if (useHidden) return `[hidden title=${title}]\n${lootStr}\n[/hidden]\n\n`;
+            return `[center][b]${title}[/b][/center]\n${lootStr}\n\n`;
+        }
+
+        const isCategorySort = sortMode.startsWith("category-");
+        const useCatHidden = bbcodeHeaderStyle === "hidden";
 
         function formatLootModel(highlights, festivals, groups) {
             let block = "";
             if ((activeCategory === "All" && highlightMode !== "off" && highlights.length) || activeCategory === "Highlights") {
-                if (showHeader()) block += formatHeader("Highlights");
-                block += formatEntryList(highlights) + "\n\n";
+                block += formatSection("Highlights", formatEntryList(highlights), useCatHidden);
             }
             if ((activeCategory === "All" && festivalMode !== "off" && festivals.length) || activeCategory === "Festival") {
-                if (showHeader()) block += formatHeader("Festival");
-                block += formatEntryList(festivals) + "\n\n";
+                block += formatSection("Festival", formatEntryList(festivals), useCatHidden);
             }
             for (const group of groups) {
-                if (group.key && showHeader()) block += formatHeader(group.key);
-                block += formatEntryList(group.entries) + "\n\n";
+                block += formatSection(group.key, formatEntryList(group.entries), useCatHidden);
             }
             return block;
         }
 
         if (isAllVenues && isGrouped) {
             const venueGroups = buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode);
+            // Venue headers use hidden only when not category-sorting (flat list per venue)
+            const useVenueHidden = useCatHidden && !isCategorySort;
             for (const vg of venueGroups) {
-                result += formatHeader(vg.venue);
-                result += formatLootModel(vg.highlights, vg.festivals, vg.groups);
+                const loot = formatLootModel(vg.highlights, vg.festivals, vg.groups);
+                if (useVenueHidden) {
+                    result += `[hidden title=${vg.venue}]\n${loot.trimEnd()}\n[/hidden]\n\n`;
+                } else {
+                    result += formatHeader(vg.venue);
+                    result += loot;
+                }
             }
         } else {
             const { highlights, festivals, groups } = buildLootModel(resolvedBBCodeVenue, sortMode, activeCategory, highlightMode, festivalMode);
@@ -377,7 +393,7 @@ button {
     background-color: var(--gc-button); color: var(--gc-button-text);
     &:has(svg) { background-color: transparent; padding: 0; }
 }
-label { float: none; }
+label { float: none; width: unset;}
 div { cursor: default; }
 .gc-buttonSmall { padding: 0.42em 0.83em 0.42em 0.83em; flex: 0 0 auto; align-self: stretch; }
 .gc-editCancel { background-color: var(--gc-main-accent); color: var(--gc-main-text); margin-left: auto; }
@@ -603,7 +619,7 @@ input[type="checkbox"] {
 
     // Creates a labelled <select> inside parent, populates options, wires change listener.
     function makeSettingSelect(parent, labelText, options, value, applyFn, tooltip = "") {
-        const labelAttrs = { text: labelText };
+        const labelAttrs = { text: labelText};
         if (tooltip) labelAttrs.title = tooltip;
         parent.appendChild(el("label", labelAttrs));
         const select = parent.appendChild(el("select"));
@@ -1405,6 +1421,23 @@ input[type="checkbox"] {
         gcSettingsContentVisual = el("div", { class: "gc-mainContent gc-hidden" });
         const displayCol = el("div", { class: "gc-flex-col" });
 
+        makeSettingSelect(displayCol, "Header Mode:",
+            [["always", "Always"], ["all", "All Only"], ["none", "None"]], headerMode,
+            v => { headerMode = v; localStorage.setItem("fr_coli_headerMode", v); updateUI(); },
+            "When to show category headers in Overview and BBCode");
+
+        makeSettingSelect(displayCol, "BBCode Header Style:",
+            [["bold-center", "Bold + Centered"], ["hidden", "Hidden tag"], ["plain", "Plain text"]], bbcodeHeaderStyle,
+            v => { bbcodeHeaderStyle = v; localStorage.setItem("fr_coli_bbcodeHeaderStyle", v); updateUI(); },
+            "How category (and venue) headers are formatted in the BBCode output");
+
+        makeSettingSelect(displayCol, "Venue group mode:",
+            [["grouped", "By Venue"], ["mixed", "Mixed"]], venueGroupMode,
+            v => { venueGroupMode = v; localStorage.setItem("fr_coli_groupMode", v); updateUI(); },
+            "If showing loot from multiple venues, should loot be separated by venue or not");
+
+        displayCol.appendChild(dividerH());
+
         displayCol.appendChild(el("label", { text: "Font size:" }));
         const fontSizeInput = displayCol.appendChild(el("input", { type: "number", min: "5", max: "40", value: fontSize }));
         fontSizeInput.addEventListener("change", () => {
@@ -1414,42 +1447,21 @@ input[type="checkbox"] {
             applyColumnMode();
         });
 
-        displayCol.appendChild(el("label", { text: "Font:" }));
-        const fontSelect = displayCol.appendChild(el("select"));
-        ["Verdana, Geneva, sans-serif", "Trebuchet MS, sans-serif", "Arial, sans-serif",
-            "Tahoma, Geneva, sans-serif", "Segoe UI, sans-serif", "Georgia, serif",
-            "Palatino Linotype, Palatino, serif", "Courier New, monospace", "Comic Sans MS, sans-serif"]
-            .forEach(f => fontSelect.appendChild(el("option", { value: f, text: f.split(",")[0] })));
-        fontSelect.value = savedFont;
-        fontSelect.addEventListener("change", () => {
-            savedFont = fontSelect.value;
-            gcRoot.style.setProperty("--gc-FontFamily", savedFont);
-            localStorage.setItem("fr_coli_fontFamily", savedFont);
-        });
+        makeSettingSelect(displayCol, "Font:",
+            [["Verdana, Geneva, sans-serif", "Verdana"],["Trebuchet MS, sans-serif", "Trebuchet MS"],["Arial, sans-serif", "Arial"],["Tahoma, Geneva, sans-serif", "Tahoma"],["Segoe UI, sans-serif", "Segoe UI"],["Georgia, serif", "Georgia"],["Palatino Linotype, Palatino, serif", "Palatino"],["Courier New, monospace", "Courier New"],["Comic Sans MS, sans-serif", "Comic Sans MS"]], savedFont,
+            v => { savedFont = v; gcRoot.style.setProperty("--gc-FontFamily", v); localStorage.setItem("fr_coli_fontFamily", v); });
 
         displayCol.appendChild(dividerH());
-
-        makeSettingSelect(displayCol, "Venue group mode:",
-            [["grouped", "By Venue"], ["mixed", "Mixed"]], venueGroupMode,
-            v => { venueGroupMode = v; localStorage.setItem("fr_coli_groupMode", v); updateUI(); },
-            "If showing loot from multiple venues, should loot be separated by venue or not");
 
         makeSettingSelect(displayCol, "Column Mode:",
             [["auto", "Auto"], ["single", "Single"]], columnMode,
             v => { columnMode = v; localStorage.setItem("fr_coli_columnMode", v); applyColumnMode(); },
             "Auto fits columns to content width, Single forces one column everywhere");
 
-        makeSettingSelect(displayCol, "Header Mode:",
-            [["always", "Always"], ["all", "All Only"], ["none", "None"]], headerMode,
-            v => { headerMode = v; localStorage.setItem("fr_coli_headerMode", v); updateUI(); },
-            "When to show category headers in Overview and BBCode");
-
         makeSettingSelect(displayCol, "Icon Mode:",
             [["both", "Both"], ["headers", "Headers Only"], ["entries", "Entries Only"]], iconMode,
             v => { iconMode = v; localStorage.setItem("fr_coli_iconMode", v); applyIconMode(); },
             "Where to show category icons — in headers, entries, or both");
-
-        displayCol.appendChild(dividerH());
 
         makeSettingSelect(displayCol, "Toggle Position:",
             [["top-right", "Top Right"], ["top-left", "Top Left"], ["bottom-right", "Bottom Right"], ["bottom-left", "Bottom Left"]], toggleCorner,
@@ -1832,7 +1844,8 @@ input[type="checkbox"] {
     // --- BUILD UI ---
     function buildUI() {
         gcMainPanel = el("div", {
-            class: "gc-panel", style: `top: ${localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_posRight") ?? 10}px; ${localStorage.getItem("fr_coli_panelWidth") ? `width: ${localStorage.getItem("fr_coli_panelWidth")}px;` : ""} ${localStorage.getItem("fr_coli_panelHeight") ? `height: ${localStorage.getItem("fr_coli_panelHeight")}px;` : ""}` });
+            class: "gc-panel", style: `top: ${localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_posRight") ?? 10}px; ${localStorage.getItem("fr_coli_panelWidth") ? `width: ${localStorage.getItem("fr_coli_panelWidth")}px;` : ""} ${localStorage.getItem("fr_coli_panelHeight") ? `height: ${localStorage.getItem("fr_coli_panelHeight")}px;` : ""}`
+        });
         gcMainPanel.appendChild(buildMainHeader());
         gcMainPanel.appendChild(buildMainTabs());
         gcMainPanel.appendChild(buildBBCodeContent());
