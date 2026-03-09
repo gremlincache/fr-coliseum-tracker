@@ -13,7 +13,7 @@
 
 (function () {
     'use strict';
-     //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!! 
+     //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!!
     // --- Prevent double execution
     if (window.hasRunColiTracker) return;
     window.hasRunColiTracker = true;
@@ -466,7 +466,6 @@ input[type="checkbox"] {
 .gc-listSection {
     column-width: var(--gc-colWidth); column-count: auto; column-gap: 0.41em;
     column-rule: 1px solid var(--gc-contentDivider); padding-bottom: 0.42em;
-    border-bottom: 1px solid var(--gc-contentDivider);
 }
 .gc-listEntry {
     border: none; background-color: var(--gc-main-accent); display: flex; padding: 2px 0.41em 1px 0.41em;
@@ -1536,7 +1535,7 @@ input[type="checkbox"] {
             "Decides if festival drops should show in the festival category only, in both festival and the original category, or be turned off");
 
         optionsCol.appendChild(el("label", { text: "Festival Items", title: "Decides which festival items should be included as festival drops" }));
-        const festivalCheckCol = optionsCol.appendChild(el("div", { class: "gc-flex-col gc-span", style: "grid-template-columns: auto 1fr; gap: 0.41em; padding: 0;" }));
+        const festivalCheckCol = optionsCol.appendChild(el("div", { class: "gc-flex-col", style: "grid-template-columns: auto 1fr; gap: 0.41em; padding: 0;" }));
         festivalTypes.forEach(([key, label]) => {
             const checkbox = festivalCheckCol.appendChild(el("input", { type: "checkbox" }));
             checkbox.checked = activeFestivals.has(key);
