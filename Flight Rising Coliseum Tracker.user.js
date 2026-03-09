@@ -1683,8 +1683,11 @@ input[type="checkbox"] {
         const footer = el("div", { class: "gc-footer" });
         const deleteAllBtn = el("button", { class: "gc-delete gc-span", text: "Delete All Data", style: "margin: auto;" });
         deleteAllBtn.addEventListener("click", () => {
-            if (!confirm("Delete ALL tracker data? This cannot be undone.")) return;
-            venues.forEach(v => saveVenueData(v, { battleCount: 0, loot: {} })); updateUI();
+            if (!confirm("Delete ALL tracker data and user settings? This cannot be undone. The page will refresh upon deletion.")) return;
+            Object.keys(localStorage)
+                .filter(k => k.startsWith("fr_coli_"))
+                .forEach(k => localStorage.removeItem(k));
+            location.reload();
         });
         footer.appendChild(deleteAllBtn);
         return footer;
