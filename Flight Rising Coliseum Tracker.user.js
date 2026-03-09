@@ -7,13 +7,14 @@
 // @grant        none
 // @run-at       document-start
 // @require      https://cdn.jsdelivr.net/gh/gremlincache/fr-coliseum-tracker@main/itemIndex.js
-// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
-// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
+// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/beta/Flight%20Rising%20Coliseum%20Tracker.user.js
+// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/beta/Flight%20Rising%20Coliseum%20Tracker.user.js
 // ==/UserScript==
 
 (function () {
     'use strict';
-
+    //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!! 
+    
     // --- Prevent double execution
     if (window.hasRunColiTracker) return;
     window.hasRunColiTracker = true;
