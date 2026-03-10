@@ -788,7 +788,7 @@ input[type="checkbox"] {
             : `${window.innerWidth - toggleRect.right}px`;
     }
 
-    function buildListHeader(iconName, title, targetEl = null, variant = "") {
+    function buildListHeader(iconName, title, targetEl = null, variant = "", key = null) {
         const header = el("button", { class: `gc-flex-row-sb gc-listHeader${variant ? ` gc-listHeader--${variant}` : ""}` });
         if (iconName) header.appendChild(createIcon(iconName));
         header.appendChild(el("div", { text: title }));
@@ -796,9 +796,12 @@ input[type="checkbox"] {
         arrow.classList.add("gc-arrow");
         header.appendChild(arrow);
         if (targetEl) {
+            const collapsed = key ? (collapseStates[key] ?? false) : false;
+            if (collapsed) { targetEl.classList.add("gc-hidden"); arrow.classList.add("gc-collapsed"); }
             header.addEventListener("click", () => {
                 const collapsed = targetEl.classList.toggle("gc-hidden");
                 arrow.classList.toggle("gc-collapsed", collapsed);
+                if (key) { collapseStates[key] = collapsed; saveCollapseStates(); }
             });
         }
         return header;
@@ -811,22 +814,23 @@ input[type="checkbox"] {
         const isGrouped = venueGroupMode === "grouped";
 
         function matchesSearch(e) { return !query || e.name.toLowerCase().includes(query) || e.id.includes(query); }
-
+        
         function renderGroup(highlights, festivals, groups, venueLabel = null) {
             const venueContent = el("div");
             const isCategorySort = sortMode.startsWith("category-");
+            const keyPrefix = venueLabel ?? "single";
             const filteredHighlights = highlights.filter(matchesSearch);
             if (isCategorySort && filteredHighlights.length > 0 && ((activeCategory === "All" && highlightMode !== "off") || activeCategory === "Highlights")) {
                 const section = el("div", { class: "gc-listSection" });
                 filteredHighlights.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount)));
-                if (showHeader()) venueContent.appendChild(buildListHeader("Highlights", "Highlights", section));
+                if (showHeader()) venueContent.appendChild(buildListHeader("Highlights", "Highlights", section, "", `overview_${keyPrefix}_Highlights`));
                 venueContent.appendChild(section);
             }
             const filteredFestivals = festivals.filter(matchesSearch);
             if (isCategorySort && filteredFestivals.length > 0 && ((activeCategory === "All" && festivalMode !== "off") || activeCategory === "Festival")) {
                 const section = el("div", { class: "gc-listSection" });
                 filteredFestivals.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount)));
-                if (showHeader()) venueContent.appendChild(buildListHeader("Specialty", "Festival", section));
+                if (showHeader()) venueContent.appendChild(buildListHeader("Specialty", "Festival", section, "", `overview_${keyPrefix}_Festival`));
                 venueContent.appendChild(section);
             }
             for (const group of groups) {
@@ -834,10 +838,10 @@ input[type="checkbox"] {
                 if (filtered.length === 0) continue;
                 const section = el("div", { class: "gc-listSection" });
                 filtered.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount)));
-                if (group.key && showHeader()) venueContent.appendChild(buildListHeader(group.key, group.key, section));
+                if (group.key && showHeader()) venueContent.appendChild(buildListHeader(group.key, group.key, section, "", `overview_${keyPrefix}_${group.key}`));
                 venueContent.appendChild(section);
             }
-            if (venueLabel && showHeader()) gcOverviewScrollBox.appendChild(buildListHeader(null, venueLabel, venueContent, "venue"));
+            if (venueLabel && showHeader()) gcOverviewScrollBox.appendChild(buildListHeader(null, venueLabel, venueContent, "venue", `overview_venue_${venueLabel}`));
             gcOverviewScrollBox.appendChild(venueContent);
         }
 
