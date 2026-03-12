@@ -6,7 +6,7 @@
 // @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
 // @run-at       document-start
-// @require      https://cdn.jsdelivr.net/gh/gremlincache/fr-coliseum-tracker@main/itemIndex.js
+// @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/beta/itemIndex.js
 // @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/beta/Flight%20Rising%20Coliseum%20Tracker.user.js
 // @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/beta/Flight%20Rising%20Coliseum%20Tracker.user.js
 // ==/UserScript==
@@ -33,6 +33,36 @@
         notn: ["7685", "7686", "7687", "7688", "15290", "15291", "15292", "15293", "7690", "7693", "7694", "7695", "7696", "15294", "15295", "15296", "15297", "7689"]
     };
 
+    const venueKeyMap = {
+        1: "training_fields",
+        2: "scorched_forest",
+        3: "forgotten_cave",
+        4: "waterway",
+        5: "arena",
+        6: "boreal_wood",
+        7: "harpys_roost",
+        9: "sandswept_delta",
+        10: "woodland_border",
+        11: "bamboo_waterfall",
+        12: "mire",
+        13: "kelp_beds",
+        14: "golem_workshop",
+        15: "rainsong_jungle",
+        16: "crystalspine_pools",
+        17: "ghostlight_ruins",
+        18: "redrock",
+        19: "volcanic_vents",
+        20: "blooming_grove",
+        21: "thunderhead_savanna",
+        22: "forbidden_portal",
+        23: "silk-strewn_wreckage",
+        24: "boneyard"
+    };
+    const elementMap = {
+        0: "neutral", 1: "earth", 2: "plague", 3: "wind", 4: "water", 5: "lightning", 6: "ice", 7: "shadow", 8: "light", 9: "arcane", 10: "nature", 11: "fire"};
+
+    let questBattleCountEnabled = localStorage.getItem("fr_coli_questBattleCount") !== "false";
+    let questBattleCountMode = localStorage.getItem("fr_coli_questBattleCountMode") ?? "battles";
     let highlightPreset = [...defaultHighlightPreset];
 
     let savedHighlightPresets = JSON.parse(localStorage.getItem("fr_coli_highlightPresets") ?? "{}");
@@ -41,16 +71,40 @@
     let workingHighlightPreset = [...highlightPreset];
 
     // --- Venues & Categories
-    const venues = ["Training Fields", "Woodland Path", "Scorched Forest", "Boneyard", "Sandswept Delta",
-        "Silk-Strewn Wreckage", "Blooming Grove", "Forgotten Cave", "Bamboo Falls", "Thunderhead Savanna",
-        "Redrock Cove", "Waterway", "Arena", "Volcanic Vents", "Rainsong Jungle", "Boreal Wood",
-        "Crystal Pools", "Harpy's Roost", "Ghostlight Ruins", "Mire", "Kelp Beds", "Construct Workshop", "Forbidden Portal"];
-    const categories = ["All", "Highlights", "Festival", "Food", "Materials", "Apparel", "Familiars", "Battle", "Skins", "Specialty", "Other"];
+    const venueDisplayMap = {
+        "training_fields": "Training Fields",
+        "woodland_border": "Woodland Path",
+        "scorched_forest": "Scorched Forest",
+        "boneyard": "Boneyard",
+        "sandswept_delta": "Sandswept Delta",
+        "silk-strewn_wreckage": "Silk-Strewn Wreckage",
+        "blooming_grove": "Blooming Grove",
+        "forgotten_cave": "Forgotten Cave",
+        "bamboo_waterfall": "Bamboo Falls",
+        "thunderhead_savanna": "Thunderhead Savanna",
+        "redrock": "Redrock Cove",
+        "waterway": "Waterway",
+        "arena": "Arena",
+        "volcanic_vents": "Volcanic Vents",
+        "rainsong_jungle": "Rainsong Jungle",
+        "boreal_wood": "Boreal Wood",
+        "crystalspine_pools": "Crystal Pools",
+        "harpys_roost": "Harpy's Roost",
+        "ghostlight_ruins": "Ghostlight Ruins",
+        "mire": "Mire",
+        "kelp_beds": "Kelp Beds",
+        "golem_workshop": "Construct Workshop",
+        "forbidden_portal": "Forbidden Portal",
+    };
+    const venues = Object.values(venueDisplayMap);
+    
+    const categories = ["All", "Highlights", "Festival", "Food", "Materials", "Apparel", "Familiars", "Battle", "Skins", "Specialty", "Other", "Wins"];
     const categoryOrderMap = Object.create(null);
     categories.forEach((cat, i) => { categoryOrderMap[cat] = i; });
 
     // --- State & defaults
-    let currentVenue = localStorage.getItem("fr_coli_currentVenue") ?? venues[0];
+    let currentVenue = localStorage.getItem("fr_coli_currentVenue") ?? "training_fields";
+    let currentEnemies = [];
     let activeCategory = localStorage.getItem("fr_coli_category") ?? "All";
     let sortMode = localStorage.getItem("fr_coli_sortMode") ?? "name";
     let fontSize = parseInt(localStorage.getItem("fr_coli_fontSize")) || 12;
@@ -60,8 +114,8 @@
     let festivalMode = localStorage.getItem("fr_coli_festivalMode") ?? "duplicate";
     let panelHidden = localStorage.getItem("fr_coli_panelHidden") !== "false";
     let venueGroupMode = localStorage.getItem("fr_coli_groupMode") ?? "grouped";
-    let bbcodeVenue = localStorage.getItem("fr_coli_bbcodeVenue") ?? "current";
-    let overviewVenue = localStorage.getItem("fr_coli_overviewVenue") ?? "current";
+    let bbcodeVenue = localStorage.getItem("fr_coli_bbcodeVenue") ?? "All";
+    let overviewVenue = localStorage.getItem("fr_coli_overviewVenue") ?? "All";
     let activeTabName = localStorage.getItem("fr_coli_activeTab") ?? "Overview";
     let activeSetTabName = localStorage.getItem("fr_coli_activeSetTab") ?? "Visual";
     const festivalTypes = [["elemental", "Elemental"], ["micro", "Micro-Holidays"], ["notn", "NotN"]];
@@ -125,6 +179,13 @@
 
     const highlightSet = new Set((highlightPreset || []).map(String));
 
+    const itemsByCategory = Object.create(null);
+    for (const [id, item] of Object.entries(itemIndex)) {
+        const cat = item.category || "Other";
+        if (!itemsByCategory[cat]) itemsByCategory[cat] = [];
+        itemsByCategory[cat].push(item);
+    }
+
     const festivalSet = new Set();
     function rebuildFestivalSet() {
         festivalSet.clear();
@@ -150,8 +211,8 @@
 
     function allVenueEntries() {
         const map = new Map();
-        for (const v of venues) {
-            for (const e of normalizeData(v)) {
+        for (const key of Object.keys(venueDisplayMap)) {
+            for (const e of normalizeData(key)) {
                 if (map.has(e.id)) map.get(e.id).amount += e.amount;
                 else map.set(e.id, { ...e });
             }
@@ -159,11 +220,9 @@
         return [...map.values()];
     }
 
-    function resolveVenue(v) { return v === "current" ? currentVenue : v; }
-
     function getVenueEntries(venue) {
         if (venue === "All") return allVenueEntries();
-        return normalizeData(resolveVenue(venue));
+        return normalizeData(venue);
     }
 
     function sortEntries(entries, sortBy) {
@@ -186,6 +245,7 @@
 
     function filterEntries(entries, highlightMode, festivalMode, activeCategory) {
         const highlights = [], festivals = [], filtered = [];
+        if (activeCategory === "Wins") return { filtered: [], highlights: [], festivals: [] };
         entries.forEach(e => {
             if (e.isHighlight) highlights.push(e);
             if (e.isFestival) festivals.push(e);
@@ -227,17 +287,22 @@
         return { highlights, festivals, groups };
     }
 
-    function buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode) {
-        return venues.map(v => ({ venue: v, ...buildLootModel(v, sortMode, activeCategory, highlightMode, festivalMode) }))
-            .filter(vg =>
-                vg.groups.some(g => g.entries.length > 0) || (highlightMode !== "off" && vg.highlights.length > 0) || (festivalMode !== "off" && vg.festivals.length > 0)
-            );
-    }
+function buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode) {
+    return Object.entries(venueDisplayMap).map(([key, name]) => ({
+        venue: name,
+        battleCount: getVenueData(key).battleCount,
+        ...buildLootModel(key, sortMode, activeCategory, highlightMode, festivalMode)
+    })).filter(vg =>
+        vg.groups.some(g => g.entries.length > 0) ||
+        (highlightMode !== "off" && vg.highlights.length > 0) ||
+        (festivalMode !== "off" && vg.festivals.length > 0) ||
+        (activeCategory === "Wins" && vg.battleCount > 0)
+    );
+}
 
     function formatBBCode() {
         let result = "";
-        const resolvedBBCodeVenue = resolveVenue(bbcodeVenue);
-        const isAllVenues = resolvedBBCodeVenue === "All";
+        const isAllVenues = bbcodeVenue === "All";
         const isGrouped = venueGroupMode === "grouped";
 
         function formatEntry(e) {
@@ -298,50 +363,101 @@
 
         if (isAllVenues && isGrouped) {
             const venueGroups = buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode);
-            // Venue headers use hidden only when not category-sorting (flat list per venue)
             const useVenueHidden = useCatHidden && !isCategorySort;
             for (const vg of venueGroups) {
+                const battlesLine = (activeCategory === "All" || activeCategory === "Wins") 
+                    ? `Battles: ${vg.battleCount}\n` : "";
                 const loot = formatLootModel(vg.highlights, vg.festivals, vg.groups);
                 if (useVenueHidden) {
-                    result += `[hidden title=${vg.venue}]\n${loot.trimEnd()}\n[/hidden]\n\n`;
+                    result += `[hidden title=${vg.venue}]\n${battlesLine}${loot.trimEnd()}\n[/hidden]\n\n`;
                 } else {
                     result += formatHeader(vg.venue);
+                    result += battlesLine;
                     result += loot;
                 }
             }
         } else {
-            const { highlights, festivals, groups } = buildLootModel(resolvedBBCodeVenue, sortMode, activeCategory, highlightMode, festivalMode);
+            const battleCount = bbcodeVenue === "All"
+                ? Object.keys(venueDisplayMap).reduce((sum, k) => sum + getVenueData(k).battleCount, 0)
+                : getVenueData(bbcodeVenue).battleCount;
+            if (activeCategory === "All" || activeCategory === "Wins") {
+                result += `Battles: ${battleCount}\n\n`;
+            }
+            const { highlights, festivals, groups } = buildLootModel(bbcodeVenue, sortMode, activeCategory, highlightMode, festivalMode);
             result += formatLootModel(highlights, festivals, groups);
         }
         return result.trim();
     }
 
     // --- WebSocket Patch
-    if (!window.coliTrackerWSHooked) {
-        window.coliTrackerWSHooked = true;
-        const OriginalWebSocket = window.WebSocket;
-        window.WebSocket = function (url, ...rest) {
-            const ws = new OriginalWebSocket(url, ...rest);
-            if (url.includes("/battle")) {
-                ws.addEventListener("message", event => {
-                    if (!event.data.includes("P1_WIN")) return;
-                    try {
-                        const jsonData = JSON.parse(event.data.slice(event.data.indexOf("[")));
-                        if (Array.isArray(jsonData) && jsonData[1] && jsonData[1][0] === "P1_WIN") {
-                            const venueData = getVenueData(currentVenue);
-                            const drops = jsonData[1][2];
-                            venueData.battleCount++;
-                            drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
-                            saveVenueData(currentVenue, venueData);
-                            updateQuestProgress(drops);
-                            updateUI();
-                        }
-                    } catch (err) { console.warn("Coliseum Tracker parse error:", err); }
-                });
-            }
-            return ws;
-        };
-    }
+if (!window.coliTrackerWSHooked) {
+    window.coliTrackerWSHooked = true;
+    const OriginalWebSocket = window.WebSocket;
+    window.WebSocket = function (url, ...rest) {
+        const ws = new OriginalWebSocket(url, ...rest);
+        if (url.includes("/battle")) {
+            ws.addEventListener("message", event => {
+                try {
+                    const jsonData = JSON.parse(event.data.slice(event.data.indexOf("[")));
+                    if (!Array.isArray(jsonData) || !jsonData[1]) return;
+
+                    // Battle-load message: venue key is a string, enemies array follows
+                    if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
+                        currentVenue = jsonData[1][0];
+                        currentEnemies = jsonData[1][1].map(e => ({
+                            name: e[3],
+                            element: e[6]
+                        }));
+                        return;
+                    }
+
+                    // Win message
+                    if (jsonData[1][0] === "P1_WIN") {
+                        const venueData = getVenueData(currentVenue);
+                        const drops = jsonData[1][2];
+                        venueData.battleCount++;
+                        drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
+                        saveVenueData(currentVenue, venueData);
+                        updateQuestProgress(drops);
+                        updateUI();
+                    }
+                } catch (err) { console.warn("Coliseum Tracker parse error:", err); }
+            });
+        }
+        return ws;
+    };
+}
+
+function enemyMatchesItem(enemy, item) {
+    const enemyElementName = elementMap[enemy.element];
+    if (!item.enemies && !item.element && !item.venues && !item.allVenues) return true;
+    if (item.enemies) return item.enemies.includes(enemy.name);
+    if (item.additionalEnemies?.includes(enemy.name)) return true;
+    if (item.excludeEnemies?.includes(enemy.name)) return false;
+    if (item.element && !item.element.includes(enemyElementName)) return false;
+    if (item.allVenues) return !item.excludeVenues?.includes(currentVenue);
+    if (item.venues) return item.venues.includes(currentVenue);
+    return false;
+}
+
+function isValidEncounter(item) {
+    if (!currentEnemies.length) return false;
+    return currentEnemies.some(enemy => enemyMatchesItem(enemy, item));
+}
+
+function countValidEnemies(item) {
+    if (!currentEnemies.length) return 0;
+    return currentEnemies.filter(enemy => enemyMatchesItem(enemy, item)).length;
+}
+
+function countValidEnemiesForCategory(category) {
+    if (!currentEnemies.length) return 0;
+    const items = itemsByCategory[category] ?? [];
+    return currentEnemies.filter(enemy =>
+        items.some(item => enemyMatchesItem(enemy, item))
+    ).length;
+}
+
 
     function ready(fn) {
         if (document.readyState !== "loading") fn();
@@ -476,7 +592,7 @@ input[type="checkbox"] {
     gap: 0em; color: var(--gc-overviewHeader-accent); background-color: var(--gc-overviewHeader);
     width: 100%; margin-bottom: 0.42em;
     svg { fill: var(--gc-overviewHeader-accent); }
-    svg:last-child { padding-right: 0.2em; }
+    svg:last-child { padding-right: 0.2em; padding-left: 0.42em; }
     div { flex: 1 1 auto; padding-left: 0.41em; text-align: left; line-height: 2em; }
 }
 .gc-listSection {
@@ -514,7 +630,7 @@ input[type="checkbox"] {
 .gc-Notification.gc-visible { opacity: 1; }
 .gc-complete { opacity: 0.6; }
 .gc-span { grid-column: 1 / -1; }
-.gc-input-narrow { flex: 0 0 auto; width: 5em; }
+.gc-input-narrow { flex: 0 0 auto !important; width: 5em; }
     `;
 
     function injectGCStyles() {
@@ -528,7 +644,7 @@ input[type="checkbox"] {
     function updateUI() {
         const venueData = getVenueData(currentVenue);
         gcWinsDisplay.textContent = `Wins: ${venueData.battleCount}`;
-        gcVenueText.textContent = currentVenue;
+        gcVenueText.textContent = venueDisplayMap[currentVenue] ?? currentVenue;
         if (!gcContentBBCode.classList.contains("gc-hidden")) gcBBCodeScrollBox.textContent = formatBBCode();
         if (!gcContentOverview.classList.contains("gc-hidden")) buildOverview();
         if (!gcContentQuests.classList.contains("gc-hidden")) { renderActiveQuests(); renderCompletedQuests(); }
@@ -572,12 +688,39 @@ input[type="checkbox"] {
         return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
     }
 
-    ready(() => { injectGCStyles(); buildUI(); updateUI(); applyColumnMode(); });
+    ready(() => { 
+            // --- Venue intercept (for battle 1 detection)
+        if (typeof window.venueSelect === 'function') {
+            const originalVenueSelect = window.venueSelect;
+            window.venueSelect = function(venueId) {
+                sessionStorage.setItem('fr_coli_pendingVenue', venueId);
+                return originalVenueSelect.apply(this, arguments);
+            };
+        }
+
+            // --- Battle 1 venue + enemy detection
+        const pendingVenue = sessionStorage.getItem('fr_coli_pendingVenue');
+        if (pendingVenue) {
+            currentVenue = venueKeyMap[parseInt(pendingVenue)] ?? currentVenue;
+            sessionStorage.removeItem('fr_coli_pendingVenue');
+
+            // Poll for _game.enemies to be populated
+            const enemyPoll = setInterval(() => {
+                if (window._game?.enemies?.length > 0) {
+                    clearInterval(enemyPoll);
+                    currentEnemies = window._game.enemies.map(e => ({
+                        name: e.name,
+                        element: e.element
+                    }));
+                }
+            }, 200);
+        }
+        injectGCStyles(); buildUI(); updateUI(); applyColumnMode(); });
 
 
     // --- UI ELEMENT REFERENCES ---
 
-    let gcRoot, gcMainToggle, gcMainPanel, gcVenueText, gcVenueSelect, gcWinsDisplay;
+    let gcRoot, gcMainToggle, gcMainPanel, gcVenueText, gcWinsDisplay;
     let gcTabBBCode, gcTabOverview, gcTabQuests;
     let gcContentBBCode, gcContentOverview, gcContentQuests;
     let gcBBCodeLayoutSelect, gcBBCodeVenueSelect, gcBBCodeScrollBox;
@@ -629,11 +772,12 @@ input[type="checkbox"] {
         return select;
     }
 
-    // Creates the "All Venues / Current Venue" select used in BBCode and Overview tabs.
+    // Creates the venue select used in BBCode and Overview tabs.
     function makeVenueFilterSelect(value, onChange) {
         const select = el("select");
-        [["All", "All Venues"], ["current", "Current Venue"]].forEach(([v, t]) =>
-            select.appendChild(el("option", { value: v, text: t })));
+        select.appendChild(el("option", { value: "All", text: "All Venues" }));
+        Object.entries(venueDisplayMap).forEach(([key, name]) =>
+            select.appendChild(el("option", { value: key, text: name })));
         select.value = value;
         select.addEventListener("change", () => onChange(select.value));
         return select;
@@ -788,34 +932,41 @@ input[type="checkbox"] {
             : `${window.innerWidth - toggleRect.right}px`;
     }
 
-    function buildListHeader(iconName, title, targetEl = null, variant = "", key = null) {
-        const header = el("button", { class: `gc-flex-row-sb gc-listHeader${variant ? ` gc-listHeader--${variant}` : ""}` });
-        if (iconName) header.appendChild(createIcon(iconName));
-        header.appendChild(el("div", { text: title }));
-        const arrow = createIcon("CollapseExpand");
-        arrow.classList.add("gc-arrow");
-        header.appendChild(arrow);
-        if (targetEl) {
-            const collapsed = key ? (collapseStates[key] ?? false) : false;
-            if (collapsed) { targetEl.classList.add("gc-hidden"); arrow.classList.add("gc-collapsed"); }
-            header.addEventListener("click", () => {
-                const collapsed = targetEl.classList.toggle("gc-hidden");
-                arrow.classList.toggle("gc-collapsed", collapsed);
-                if (key) { collapseStates[key] = collapsed; saveCollapseStates(); }
-            });
-        }
-        return header;
+function buildListHeader(iconName, title, targetEl = null, variant = "", key = null, rightText = "") {
+    const header = el("button", { class: `gc-flex-row-sb gc-listHeader${variant ? ` gc-listHeader--${variant}` : ""}` });
+    if (iconName) header.appendChild(createIcon(iconName));
+    header.appendChild(el("div", { text: title }));
+    if (rightText) header.appendChild(el("div", { text: rightText, style: "flex: 0 1 auto; font-weight: normal;" }));
+    const arrow = createIcon("CollapseExpand");
+    arrow.classList.add("gc-arrow");
+    if (targetEl) {
+        const collapsed = key ? (collapseStates[key] ?? false) : false;
+        if (collapsed) { targetEl.classList.add("gc-hidden"); arrow.classList.add("gc-collapsed"); }
+        header.addEventListener("click", () => {
+            const collapsed = targetEl.classList.toggle("gc-hidden");
+            arrow.classList.toggle("gc-collapsed", collapsed);
+            if (key) { collapseStates[key] = collapsed; saveCollapseStates(); }
+        });
     }
+    header.appendChild(arrow);
+    return header;
+}
 
     function buildOverview() {
         gcOverviewScrollBox.innerHTML = "";
         const query = gcOverviewSearch?.value.trim().toLowerCase() ?? "";
-        const isAllVenues = resolveVenue(overviewVenue) === "All" || overviewVenue === "All";
+        const isAllVenues = overviewVenue === "All";
         const isGrouped = venueGroupMode === "grouped";
+
+        function buildWinsEntry(count) {
+            const entry = el("div", { class: "gc-listEntry", style: "margin-bottom: 0.42em; margin-top: -0.42em; border: none;" });
+            entry.appendChild(el("div", { text: `Wins: ${count}`, style: "text-align: center"}));
+            return entry;
+        }
 
         function matchesSearch(e) { return !query || e.name.toLowerCase().includes(query) || e.id.includes(query); }
         
-        function renderGroup(highlights, festivals, groups, venueLabel = null) {
+        function renderGroup(highlights, festivals, groups, venueLabel = null, battleCount = null) {
             const venueContent = el("div");
             const isCategorySort = sortMode.startsWith("category-");
             const keyPrefix = venueLabel ?? "single";
@@ -841,15 +992,25 @@ input[type="checkbox"] {
                 if (group.key && showHeader()) venueContent.appendChild(buildListHeader(group.key, group.key, section, "", `overview_${keyPrefix}_${group.key}`));
                 venueContent.appendChild(section);
             }
-            if (venueLabel && showHeader()) gcOverviewScrollBox.appendChild(buildListHeader(null, venueLabel, venueContent, "venue", `overview_venue_${venueLabel}`));
+            
+            if (venueLabel && showHeader()) {
+                gcOverviewScrollBox.appendChild(buildListHeader(null, venueLabel, venueContent, "venue",`overview_venue_${venueLabel}`,battleCount !== null ? `Wins: ${battleCount}` : ""));
+            }
+            
             gcOverviewScrollBox.appendChild(venueContent);
         }
 
         if (isAllVenues && isGrouped) {
             const venueGroups = buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode);
-            for (const vg of venueGroups) renderGroup(vg.highlights, vg.festivals, vg.groups, vg.venue);
+            for (const vg of venueGroups) renderGroup(vg.highlights, vg.festivals, vg.groups, vg.venue, vg.battleCount);
         } else {
-            const { highlights, festivals, groups } = buildLootModel(resolveVenue(overviewVenue), sortMode, activeCategory, highlightMode, festivalMode);
+            const { highlights, festivals, groups } = buildLootModel(overviewVenue, sortMode, activeCategory, highlightMode, festivalMode);
+            const battleCount = overviewVenue === "All"
+                ? Object.keys(venueDisplayMap).reduce((sum, k) => sum + getVenueData(k).battleCount, 0)
+                : getVenueData(overviewVenue).battleCount;
+            if (activeCategory === "All" || activeCategory === "Wins") {
+                gcOverviewScrollBox.appendChild(buildWinsEntry(battleCount));
+            }
             renderGroup(highlights, festivals, groups);
         }
         gcOverviewScrollBox.querySelectorAll(".gc-listSection").forEach(fitColumns);
@@ -876,6 +1037,7 @@ input[type="checkbox"] {
         if (goal.type === "item") return `${goal.itemName}`;
         if (goal.type === "category") return `Any ${goal.category} drops`;
         if (goal.type === "battles") return goal.venue === "All" ? "Battles in any venue" : `Battles in ${goal.venue}`;
+        if (goal.type === "enemy") return `Encounter ${goal.enemyName}`;
         return "?";
     }
 
@@ -910,11 +1072,37 @@ input[type="checkbox"] {
         activeQuests.forEach(quest => {
             if (quest.completed) return;
             let changed = false;
+            // Valid encounter battle count (runs once per win, not per drop)
             quest.goals.forEach(goal => {
-                if (goal.type === "battles" && (goal.venue === "All" || goal.venue === currentVenue)) {
+                // Battle count goal
+                if (goal.type === "battles" && (goal.venue === "All" || goal.venue === venueDisplayMap[currentVenue])) {
                     goal.progress++; changed = true;
                 }
+                // Enemy encounter goal
+                if (goal.type === "enemy") {
+                    const encountered = currentEnemies.some(e => e.name === goal.enemyName);
+                    if (encountered) { goal.progress++; changed = true; }
+                }
             });
+            if (questBattleCountEnabled) {
+                quest.goals.forEach(goal => {
+                    if (goal.type === "item") {
+                        const item = itemIndex[String(goal.itemId)];
+                        if (item) {
+                            const count = questBattleCountMode === "enemies"
+                                ? countValidEnemies(item)
+                                : (isValidEncounter(item) ? 1 : 0);
+                            if (count > 0) { goal.battleCount = (goal.battleCount || 0) + count; changed = true; }
+                        }
+                    }
+                    if (goal.type === "category") {
+                        const count = questBattleCountMode === "enemies"
+                            ? countValidEnemiesForCategory(goal.category)
+                            : ((itemsByCategory[goal.category] ?? []).some(item => isValidEncounter(item)) ? 1 : 0);
+                        if (count > 0) { goal.battleCount = (goal.battleCount || 0) + count; changed = true; }
+                    }
+                });
+            }
             drops.forEach(([id, , amount]) => {
                 const item = itemIndex[String(id)];
                 const itemCategory = item?.category ?? "Other";
@@ -946,13 +1134,13 @@ input[type="checkbox"] {
         }
         if (anyChanged) saveActiveQuests();
     }
-
     // --- QUEST UI ---
     function buildQuestItem(quest, editMode, isCompleted) {
         const { total, done } = questTotalProgress(quest);
         const progressStr = `${done}/${total}`;
         const isFlat = quest.goals.length === 1 && !quest.name;
         const isComplete = isCompleted || isQuestComplete(quest);
+        const battleLabel = questBattleCountMode === "enemies" ? "encounters" : "battles";
 
         // Shared delete button factory — captures quest/isCompleted from outer scope
         function makeDelBtn() {
@@ -975,7 +1163,9 @@ input[type="checkbox"] {
             } else {
                 row.appendChild(el("div", { text: goalLabel(quest.goals[0]), style: "flex: 1 1 auto;" }));
             }
-            row.appendChild(el("div", { text: progressStr, style: "flex: 0 0 auto; padding-right: calc(var(--gc-fontSize) * 1.25 + 0.62em)" }));
+            const goal0 = quest.goals[0];
+            const battleStr0 = questBattleCountEnabled && goal0.battleCount && (goal0.type === "item" || goal0.type === "category") ? ` (${goal0.battleCount} ${battleLabel})` : "";
+            row.appendChild(el("div", { text: progressStr + battleStr0, style: "flex: 0 1 auto; font-weight: normal;" }));
             if (editMode) row.appendChild(makeDelBtn());
             return row;
         }
@@ -991,24 +1181,31 @@ input[type="checkbox"] {
             header.appendChild(el("div", { text: quest.name ?? "Unnamed Quest" }));
         }
 
-        header.appendChild(el("div", { text: progressStr, style: "padding-right: 0.42em; flex: 0 0 auto;" }));
+        header.appendChild(el("div", { text: progressStr, style: "flex: 0 1 auto; font-weight: normal;" }));
         if (editMode) header.appendChild(makeDelBtn());
 
-        const goals = el("div", { class: "gc-listSection gc-hidden" });
+        const collapseKey = `quest_${quest.id}`;
+        const startCollapsed = collapseStates[collapseKey] ?? true;
+        const goals = el("div", { class: `gc-listSection${startCollapsed ? " gc-hidden" : ""}` });
         const arrow = createIcon("CollapseExpand");
-        arrow.classList.add("gc-arrow", "gc-collapsed");
+        arrow.classList.add("gc-arrow");
+        if (startCollapsed) arrow.classList.add("gc-collapsed");
         header.appendChild(arrow);
 
         header.addEventListener("click", e => {
             if (e.target.closest(".gc-delete") || e.target.tagName === "INPUT") return;
             const collapsed = goals.classList.toggle("gc-hidden");
             arrow.classList.toggle("gc-collapsed", collapsed);
+            collapseStates[collapseKey] = collapsed;
+            saveCollapseStates();
         });
 
         quest.goals.forEach(goal => {
             const row = el("div", { class: `gc-listEntry${goal.progress >= goal.target ? " gc-complete" : ""}` });
             row.appendChild(el("div", { text: goalLabel(goal) }));
-            row.appendChild(el("div", { text: `${Math.min(goal.progress, goal.target)}/${goal.target}` }));
+            const battleStr = questBattleCountEnabled && goal.battleCount && (goal.type === "item" || goal.type === "category")
+                ? ` (${goal.battleCount} ${battleLabel})` : "";
+            row.appendChild(el("div", { text: `${Math.min(goal.progress, goal.target)}/${goal.target}${battleStr}` , style: "flex: 0 1 auto; font-weight: normal;"}));
             goals.appendChild(row);
         });
 
@@ -1082,47 +1279,9 @@ input[type="checkbox"] {
         header.appendChild(dividerV());
 
         const venueWrapper = header.appendChild(el("div", { class: "gc-flex-row", style: "flex: 1 1 auto; gap: 0; height: 3em;" }));
-
-        const editBtn = venueWrapper.appendChild(el("button"));
-        const editIcon = editBtn.appendChild(createIcon("Edit"));
-        const confirmIcon = editBtn.appendChild(createIcon("Check", "width: calc(var(--gc-fontSize) * 1.75)"));
-        confirmIcon.classList.add("gc-hidden");
-        const cancelBtn = venueWrapper.appendChild(iconBtn("BigX", "gc-hidden"));
-
-        let isEditModeActive = false;
         const venueInfo = venueWrapper.appendChild(el("div", { style: "padding-left: 0.82em" }));
-
-        gcVenueText = venueInfo.appendChild(el("div", { class: "gc-headerText", text: currentVenue }));
-        gcVenueSelect = venueInfo.appendChild(el("select", { class: "gc-hidden" }));
-        venues.forEach(v => gcVenueSelect.appendChild(el("option", { value: v, text: v })));
-        gcVenueSelect.value = currentVenue;
+        gcVenueText = venueInfo.appendChild(el("div", { class: "gc-headerText", text: venueDisplayMap[currentVenue] ?? currentVenue }));
         gcWinsDisplay = venueInfo.appendChild(el("div", { text: "Wins:" }));
-
-        function enterEditVenueMode() {
-            gcVenueText.classList.add("gc-hidden"); gcVenueSelect.classList.remove("gc-hidden");
-            confirmIcon.classList.remove("gc-hidden"); editIcon.classList.add("gc-hidden");
-            cancelBtn.classList.remove("gc-hidden"); gcWinsDisplay.classList.add("gc-hidden");
-        }
-        function leaveEditVenueMode() {
-            gcVenueText.classList.remove("gc-hidden"); gcVenueSelect.classList.add("gc-hidden");
-            confirmIcon.classList.add("gc-hidden"); editIcon.classList.remove("gc-hidden");
-            cancelBtn.classList.add("gc-hidden"); gcWinsDisplay.classList.remove("gc-hidden");
-        }
-        function updateVenue() {
-            currentVenue = gcVenueSelect.value;
-            localStorage.setItem("fr_coli_currentVenue", currentVenue);
-            updateUI();
-        }
-
-        editBtn.addEventListener("click", () => {
-            if (isEditModeActive) { updateVenue(); leaveEditVenueMode(); isEditModeActive = false; }
-            else { enterEditVenueMode(); isEditModeActive = true; }
-        });
-        cancelBtn.addEventListener("click", () => { gcVenueSelect.value = currentVenue; leaveEditVenueMode(); isEditModeActive = false; });
-        gcVenueSelect.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") { updateVenue(); leaveEditVenueMode(); isEditModeActive = false; }
-            if (e.key === "Escape") { gcVenueSelect.value = currentVenue; leaveEditVenueMode(); isEditModeActive = false; }
-        });
 
         const gearMinCol = header.appendChild(el("div", { class: "gc-flex-row", style: "align-self: flex-start;" }));
 
@@ -1287,7 +1446,7 @@ input[type="checkbox"] {
         refreshGoalsBox();
 
         const itemRow = el("div", { class: "gc-flex-row" });
-        const itemInput = itemRow.appendChild(el("input", { type: "text", placeholder: "Item name or ID" }));
+        const itemInput = itemRow.appendChild(el("input", { type: "text", placeholder: "Item name or ID", style: "padding-right: 0.42em;"}));
         const itemAmount = itemRow.appendChild(el("input", { type: "number", placeholder: "Amount", class: "gc-input-narrow", min: "1" }));
         const addItemBtn = itemRow.appendChild(iconBtn("Add"));
         addItemBtn.addEventListener("click", () => {
@@ -1301,7 +1460,7 @@ input[type="checkbox"] {
 
         const categoryRow = el("div", { class: "gc-flex-row" });
         const categorySelect = categoryRow.appendChild(el("select"));
-        categories.filter(c => c !== "All").forEach(c => categorySelect.appendChild(el("option", { value: c, text: c })));
+        categories.filter(c => c !== "All" && c !== "Wins").forEach(c => categorySelect.appendChild(el("option", { value: c, text: c === "Battle" ? "Battle Items" : c })));
         const categoryAmount = categoryRow.appendChild(el("input", { type: "number", placeholder: "Amount", class: "gc-input-narrow", min: "1" }));
         const addCategoryBtn = categoryRow.appendChild(iconBtn("Add"));
         addCategoryBtn.addEventListener("click", () => {
@@ -1324,6 +1483,19 @@ input[type="checkbox"] {
             venueAmount.value = ""; refreshGoalsBox();
         });
 
+/*         const enemyRow = el("div", { class: "gc-flex-row" });
+        const enemyInput = enemyRow.appendChild(el("input", { type: "text", placeholder: "Enemy name" }));
+        const enemyAmount = enemyRow.appendChild(el("input", { type: "number", placeholder: "Battles", class: "gc-input-narrow", min: "1" }));
+        const addEnemyBtn = enemyRow.appendChild(iconBtn("Add"));
+        addEnemyBtn.addEventListener("click", () => {
+            const name = enemyInput.value.trim();
+            const amt = parseInt(enemyAmount.value);
+            if (!name || !amt || amt < 1) { flashInvalid(...(!name ? [enemyInput] : []), ...(!amt || amt < 1 ? [enemyAmount] : [])); return; }
+            pendingGoals.push({ type: "enemy", enemyName: name, target: amt, progress: 0 });
+            enemyInput.value = ""; enemyAmount.value = "";
+            refreshGoalsBox();
+        }); */
+
         const addQuestBtn = el("button", { class: "gc-buttonSmall", text: "Add Quest", style: "margin: 0 auto 0.41em auto;" });
         addQuestBtn.addEventListener("click", () => {
             if (!pendingGoals.length) { flashInvalid(newQuestGoalsBox); return; }
@@ -1333,7 +1505,7 @@ input[type="checkbox"] {
             refreshGoalsBox(); renderActiveQuests();
         });
 
-        newQuestHeader.appendChild(makeCollapseButton([questNameRow, itemRow, categoryRow, venueRow, newQuestGoalsBox, addQuestBtn]));
+        newQuestHeader.appendChild(makeCollapseButton([questNameRow, itemRow, categoryRow, venueRow, /* enemyRow, */ newQuestGoalsBox, addQuestBtn]));
 
         // ---- Completed Quests ----
         gcCompletedQuestsBox = el("div", { class: "gc-scrollBox gc-scrollBox--resize" });
@@ -1351,6 +1523,7 @@ input[type="checkbox"] {
         gcContentQuests.appendChild(itemRow);
         gcContentQuests.appendChild(categoryRow);
         gcContentQuests.appendChild(venueRow);
+/*         gcContentQuests.appendChild(enemyRow); */
         gcContentQuests.appendChild(newQuestGoalsBox);
         gcContentQuests.appendChild(addQuestBtn);
         gcContentQuests.appendChild(completedHeader);
@@ -1372,7 +1545,7 @@ input[type="checkbox"] {
         });
 
         gcFooterCategorySelect = footer.appendChild(el("select"));
-        categories.forEach(v => gcFooterCategorySelect.appendChild(el("option", { value: v, text: v })));
+        categories.forEach(v => gcFooterCategorySelect.appendChild(el("option", { value: v, text: v === "Battle" ? "Battle Items" : v })));
         gcFooterCategorySelect.value = activeCategory;
         gcFooterCategorySelect.addEventListener("change", () => {
             activeCategory = gcFooterCategorySelect.value; localStorage.setItem("fr_coli_category", activeCategory); updateUI();
@@ -1387,7 +1560,7 @@ input[type="checkbox"] {
         const resetAllBtn = el("button", { text: "Reset All Venues" });
         resetAllBtn.addEventListener("click", () => {
             if (!confirm("Reset loot data for ALL venues? This cannot be undone.")) return;
-            venues.forEach(v => saveVenueData(v, { battleCount: 0, loot: {} })); updateUI();
+            Object.keys(venueDisplayMap).forEach(key => saveVenueData(key, { battleCount: 0, loot: {} }));
         });
 
         const collapseBtn = footer.appendChild(makeCollapseButton([gcFooterSortSelect, gcFooterCategorySelect, resetVenueBtn, resetAllBtn], "footer"));
@@ -1439,6 +1612,18 @@ input[type="checkbox"] {
             [["grouped", "By Venue"], ["mixed", "Mixed"]], venueGroupMode,
             v => { venueGroupMode = v; localStorage.setItem("fr_coli_groupMode", v); updateUI(); },
             "If showing loot from multiple venues, should loot be separated by venue or not");
+
+            displayCol.appendChild(dividerH());
+
+        makeSettingSelect(displayCol, "Quest Battle Count:",
+            [["on", "On"], ["off", "Off"]], questBattleCountEnabled ? "on" : "off",
+            v => { questBattleCountEnabled = v === "on"; localStorage.setItem("fr_coli_questBattleCount", questBattleCountEnabled); updateUI(); },
+            "Track how many valid encounters it took to get a quest item drop");
+
+        makeSettingSelect(displayCol, "Quest Battle Count Mode:",
+            [["battles", "Valid Battles"], ["enemies", "Valid Enemy Encounters"]], questBattleCountMode,
+            v => { questBattleCountMode = v; localStorage.setItem("fr_coli_questBattleCountMode", v); updateUI(); },
+            "Whether the battle count tracks whole battles (1 per fight) or individual valid enemies per fight");
 
         displayCol.appendChild(dividerH());
 
