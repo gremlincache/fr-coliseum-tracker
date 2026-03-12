@@ -2333,7 +2333,7 @@
 24442: { name: "Basilisk Skin Crate", category: "Other", enemies: ["Basilisk"] },
 24443: { name: "Janus Crate", category: "Other", enemies: ["Janustrap"] },
 24480: { name: "Featherback Boar Crate", category: "Other", enemies: ["Featherback Boar"] },
-24483: { name: "Goldenplains Mith Crate", category: "Other", enemies: ["Goldenplains Mith"] },
+24483: { name: "Goldenplains Mith Crate", category: "Other", enemies: ["Goldenplains Poodle Mith"] },
 24484: { name: "Marshland Poodle Mith Crate", category: "Other", enemies: ["Marshland Poodle Mith"] },
 24495: { name: "Shining Gladiator's Helmet", category: "Other", enemies: ["Longneck Gladiator"] },
 24500: { name: "Showy Bells", category: "Other", enemies: ["Stormclaw Showman"] },
@@ -2693,7 +2693,6 @@
 43685: { name: "Scene: Springswarm", category: "Specialty", element: ["neutral"], allVenues: true },
 43921: { name: "Scene: Woodland Path", category: "Specialty", venues: ["woodland_border"] },
 44049: { name: "Scene: Kelp Beds", category: "Specialty", venues: ["kelp_beds"] },
-46153: { name: "Tertiary Gene: Flecks", category: "Specialty", element: ["shadow", "plague", "wind", "ice", "fire", "earth"], allVenues: true },
 46154: { name: "Tertiary Gene: Flecks", category: "Specialty", element: ["shadow", "plague", "wind", "ice", "fire", "earth"], allVenues: true },
 46886: { name: "Vista: Drakeharvest", category: "Specialty", element: ["neutral"], allVenues: true },
 48025: { name: "Vista: Frigidfin Expedition", category: "Specialty", element: ["neutral"], allVenues: true },
@@ -2740,6 +2739,7 @@
 
     };
 })();
+
 
 
 
