@@ -973,14 +973,14 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
             const filteredHighlights = highlights.filter(matchesSearch);
             if (isCategorySort && filteredHighlights.length > 0 && ((activeCategory === "All" && highlightMode !== "off") || activeCategory === "Highlights")) {
                 const section = el("div", { class: "gc-listSection" });
-                filteredHighlights.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount)));
+                filteredHighlights.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount, null, e.isHighlight)));
                 if (showHeader()) venueContent.appendChild(buildListHeader("Highlights", "Highlights", section, "", `overview_${keyPrefix}_Highlights`));
                 venueContent.appendChild(section);
             }
             const filteredFestivals = festivals.filter(matchesSearch);
             if (isCategorySort && filteredFestivals.length > 0 && ((activeCategory === "All" && festivalMode !== "off") || activeCategory === "Festival")) {
                 const section = el("div", { class: "gc-listSection" });
-                filteredFestivals.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount)));
+                filteredFestivals.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount, null, e.isHighlight)));
                 if (showHeader()) venueContent.appendChild(buildListHeader("Specialty", "Festival", section, "", `overview_${keyPrefix}_Festival`));
                 venueContent.appendChild(section);
             }
@@ -988,7 +988,7 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
                 const filtered = group.entries.filter(matchesSearch);
                 if (filtered.length === 0) continue;
                 const section = el("div", { class: "gc-listSection" });
-                filtered.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount)));
+                filtered.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount, null, e.isHighlight)));
                 if (group.key && showHeader()) venueContent.appendChild(buildListHeader(group.key, group.key, section, "", `overview_${keyPrefix}_${group.key}`));
                 venueContent.appendChild(section);
             }
@@ -1086,6 +1086,7 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
             });
             if (questBattleCountEnabled) {
                 quest.goals.forEach(goal => {
+                    if (goal.progress >= goal.target) return; // Goal already complete
                     if (goal.type === "item") {
                         const item = itemIndex[String(goal.itemId)];
                         if (item) {
@@ -1096,6 +1097,7 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
                         }
                     }
                     if (goal.type === "category") {
+                        if (goal.progress >= goal.target) return; // Goal already complete
                         const count = questBattleCountMode === "enemies"
                             ? countValidEnemiesForCategory(goal.category)
                             : ((itemsByCategory[goal.category] ?? []).some(item => isValidEncounter(item)) ? 1 : 0);
@@ -1200,14 +1202,26 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
             saveCollapseStates();
         });
 
-        quest.goals.forEach(goal => {
-            const row = el("div", { class: `gc-listEntry${goal.progress >= goal.target ? " gc-complete" : ""}` });
-            row.appendChild(el("div", { text: goalLabel(goal) }));
-            const battleStr = questBattleCountEnabled && goal.battleCount && (goal.type === "item" || goal.type === "category")
-                ? ` (${goal.battleCount} ${battleLabel})` : "";
-            row.appendChild(el("div", { text: `${Math.min(goal.progress, goal.target)}/${goal.target}${battleStr}` , style: "flex: 0 1 auto; font-weight: normal;"}));
-            goals.appendChild(row);
+quest.goals.forEach((goal, index) => {
+    const row = el("div", { class: `gc-listEntry${goal.progress >= goal.target ? " gc-complete" : ""}` });
+    row.appendChild(el("div", { text: goalLabel(goal) }));
+    const battleStr = questBattleCountEnabled && goal.battleCount && (goal.type === "item" || goal.type === "category")
+        ? ` (${goal.battleCount} ${battleLabel})` : "";
+    row.appendChild(el("div", { text: `${Math.min(goal.progress, goal.target)}/${goal.target}${battleStr}`  , style: "flex: 0 1 auto; font-weight: normal;"}));
+    if (editMode && !isCompleted) {
+        const del = iconBtn("SmallX", "gc-delete");
+        del.addEventListener("click", () => {
+            quest.goals.splice(index, 1);
+            if (!quest.goals.length) {
+                activeQuests = activeQuests.filter(q => q.id !== quest.id);
+            }
+            saveActiveQuests();
+            renderActiveQuests();
         });
+        row.appendChild(del);
+    }
+    goals.appendChild(row);
+});
 
         wrapper.appendChild(header);
         wrapper.appendChild(goals);
@@ -1560,7 +1574,7 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
         const resetAllBtn = el("button", { text: "Reset All Venues" });
         resetAllBtn.addEventListener("click", () => {
             if (!confirm("Reset loot data for ALL venues? This cannot be undone.")) return;
-            Object.keys(venueDisplayMap).forEach(key => saveVenueData(key, { battleCount: 0, loot: {} }));
+            Object.keys(venueDisplayMap).forEach(key => saveVenueData(key, { battleCount: 0, loot: {} })); updateUI();
         });
 
         const collapseBtn = footer.appendChild(makeCollapseButton([gcFooterSortSelect, gcFooterCategorySelect, resetVenueBtn, resetAllBtn], "footer"));
@@ -1895,9 +1909,9 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
     }
 
     // --- BUILD LIST ENTRY ---
-    function buildListEntry(iconName, name, amount, onDelete = null) {
+    function buildListEntry(iconName, name, amount, onDelete = null, isHighlight = false) {
         const entry = el("div", { class: "gc-listEntry" });
-        entry.appendChild(createIcon(iconName, "width: 1.1em"));
+        entry.appendChild(createIcon(iconName, `width: 1.1em${isHighlight ? "; fill: var(--gc-highlightColor)" : ""}`));
         entry.appendChild(el("div", { text: name }));
         entry.appendChild(el("div", { text: `x${amount}` }));
         if (onDelete) {
