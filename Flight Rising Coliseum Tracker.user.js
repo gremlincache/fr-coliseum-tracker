@@ -405,7 +405,7 @@ if (!window.coliTrackerWSHooked) {
                     if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
                         currentVenue = jsonData[1][0];
                         currentEnemies = jsonData[1][1].map(e => ({
-                            name: e[3],
+                            name: e[3].trim(),
                             element: e[6]
                         }));
                         return;
@@ -709,7 +709,7 @@ input[type="checkbox"] {
                 if (window._game?.enemies?.length > 0) {
                     clearInterval(enemyPoll);
                     currentEnemies = window._game.enemies.map(e => ({
-                        name: e.name,
+                        name: e.name.trim(),
                         element: e.element
                     }));
                 }
