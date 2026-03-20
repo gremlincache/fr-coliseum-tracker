@@ -59,7 +59,8 @@
         24: "boneyard"
     };
     const elementMap = {
-        0: "neutral", 1: "earth", 2: "plague", 3: "wind", 4: "water", 5: "lightning", 6: "ice", 7: "shadow", 8: "light", 9: "arcane", 10: "nature", 11: "fire"};
+        0: "neutral", 1: "earth", 2: "plague", 3: "wind", 4: "water", 5: "lightning", 6: "ice", 7: "shadow", 8: "light", 9: "arcane", 10: "nature", 11: "fire"
+    };
 
     let questBattleCountEnabled = localStorage.getItem("fr_coli_questBattleCount") !== "false";
     let questBattleCountMode = localStorage.getItem("fr_coli_questBattleCountMode") ?? "battles";
@@ -97,7 +98,7 @@
         "forbidden_portal": "Forbidden Portal",
     };
     const venues = Object.values(venueDisplayMap);
-    
+
     const categories = ["All", "Highlights", "Festival", "Food", "Materials", "Apparel", "Familiars", "Battle", "Skins", "Specialty", "Other", "Wins"];
     const categoryOrderMap = Object.create(null);
     categories.forEach((cat, i) => { categoryOrderMap[cat] = i; });
@@ -174,9 +175,19 @@
         return headerMode === "always" || (headerMode === "all" && activeCategory === "All");
     }
 
-    const getVenueData = (v) => JSON.parse(localStorage.getItem(`fr_coli_data_${v}`) || '{"battleCount":0,"loot":{}}');
-    const saveVenueData = (v, d) => localStorage.setItem(`fr_coli_data_${v}`, JSON.stringify(d));
+    const venueDataCache = {};
+    function getVenueData(v) {
+        if (!venueDataCache[v])
+            venueDataCache[v] = JSON.parse(localStorage.getItem(`fr_coli_data_${v}`) || '{"battleCount":0,"loot":{}}');
+        return venueDataCache[v];
+    }
+    function saveVenueData(v, d) {
+        venueDataCache[v] = d;
+        localStorage.setItem(`fr_coli_data_${v}`, JSON.stringify(d));
+    }
 
+    const overviewAmountEls = new Map(); // itemId -> amount DOM element
+    let overviewWinsEl = null;           // reference to wins display in overview
     const highlightSet = new Set((highlightPreset || []).map(String));
 
     const itemsByCategory = Object.create(null);
@@ -184,6 +195,11 @@
         const cat = item.category || "Other";
         if (!itemsByCategory[cat]) itemsByCategory[cat] = [];
         itemsByCategory[cat].push(item);
+    }
+
+    const itemNameMap = Object.create(null);
+    for (const [id, item] of Object.entries(itemIndex)) {
+        itemNameMap[item.name.toLowerCase()] = id;
     }
 
     const festivalSet = new Set();
@@ -287,18 +303,18 @@
         return { highlights, festivals, groups };
     }
 
-function buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode) {
-    return Object.entries(venueDisplayMap).map(([key, name]) => ({
-        venue: name,
-        battleCount: getVenueData(key).battleCount,
-        ...buildLootModel(key, sortMode, activeCategory, highlightMode, festivalMode)
-    })).filter(vg =>
-        vg.groups.some(g => g.entries.length > 0) ||
-        (highlightMode !== "off" && vg.highlights.length > 0) ||
-        (festivalMode !== "off" && vg.festivals.length > 0) ||
-        (activeCategory === "Wins" && vg.battleCount > 0)
-    );
-}
+    function buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode) {
+        return Object.entries(venueDisplayMap).map(([key, name]) => ({
+            venue: name,
+            battleCount: getVenueData(key).battleCount,
+            ...buildLootModel(key, sortMode, activeCategory, highlightMode, festivalMode)
+        })).filter(vg =>
+            vg.groups.some(g => g.entries.length > 0) ||
+            (highlightMode !== "off" && vg.highlights.length > 0) ||
+            (festivalMode !== "off" && vg.festivals.length > 0) ||
+            (activeCategory === "Wins" && vg.battleCount > 0)
+        );
+    }
 
     function formatBBCode() {
         let result = "";
@@ -365,7 +381,7 @@ function buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festiva
             const venueGroups = buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode);
             const useVenueHidden = useCatHidden && !isCategorySort;
             for (const vg of venueGroups) {
-                const battlesLine = (activeCategory === "All" || activeCategory === "Wins") 
+                const battlesLine = (activeCategory === "All" || activeCategory === "Wins")
                     ? `Battles: ${vg.battleCount}\n` : "";
                 const loot = formatLootModel(vg.highlights, vg.festivals, vg.groups);
                 if (useVenueHidden) {
@@ -390,73 +406,74 @@ function buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festiva
     }
 
     // --- WebSocket Patch
-if (!window.coliTrackerWSHooked) {
-    window.coliTrackerWSHooked = true;
-    const OriginalWebSocket = window.WebSocket;
-    window.WebSocket = function (url, ...rest) {
-        const ws = new OriginalWebSocket(url, ...rest);
-        if (url.includes("/battle")) {
-            ws.addEventListener("message", event => {
-                try {
-                    const jsonData = JSON.parse(event.data.slice(event.data.indexOf("[")));
-                    if (!Array.isArray(jsonData) || !jsonData[1]) return;
+    if (!window.coliTrackerWSHooked) {
+        window.coliTrackerWSHooked = true;
+        const OriginalWebSocket = window.WebSocket;
+        window.WebSocket = function (url, ...rest) {
+            const ws = new OriginalWebSocket(url, ...rest);
+            if (url.includes("/battle")) {
+                ws.addEventListener("message", event => {
+                    try {
+                        const jsonData = JSON.parse(event.data.slice(event.data.indexOf("[")));
+                        if (!Array.isArray(jsonData) || !jsonData[1]) return;
 
-                    // Battle-load message: venue key is a string, enemies array follows
-                    if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
-                        currentVenue = jsonData[1][0];
-                        currentEnemies = jsonData[1][1].map(e => ({
-                            name: e[3].trim(),
-                            element: e[6]
-                        }));
-                        return;
-                    }
+                        // Battle-load message: venue key is a string, enemies array follows
+                        if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
+                            currentVenue = jsonData[1][0];
+                            currentEnemies = jsonData[1][1].map(e => ({
+                                name: e[3].trim(),
+                                element: e[6]
+                            }));
+                            return;
+                        }
 
-                    // Win message
-                    if (jsonData[1][0] === "P1_WIN") {
-                        const venueData = getVenueData(currentVenue);
-                        const drops = jsonData[1][2];
-                        venueData.battleCount++;
-                        drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
-                        saveVenueData(currentVenue, venueData);
-                        updateQuestProgress(drops);
-                        updateUI();
-                    }
-                } catch (err) { console.warn("Coliseum Tracker parse error:", err); }
-            });
-        }
-        return ws;
-    };
-}
+                        // Win message
+                        if (jsonData[1][0] === "P1_WIN") {
+                            const venueData = getVenueData(currentVenue);
+                            const drops = jsonData[1][2];
+                            venueData.battleCount++;
+                            drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
+                            saveVenueData(currentVenue, venueData);
+                            updateQuestProgress(drops);
+                            updateUI(drops);
 
-function enemyMatchesItem(enemy, item) {
-    const enemyElementName = elementMap[enemy.element];
-    if (!item.enemies && !item.element && !item.venues && !item.allVenues) return true;
-    if (item.enemies) return item.enemies.includes(enemy.name);
-    if (item.additionalEnemies?.includes(enemy.name)) return true;
-    if (item.excludeEnemies?.includes(enemy.name)) return false;
-    if (item.element && !item.element.includes(enemyElementName)) return false;
-    if (item.allVenues) return !item.excludeVenues?.includes(currentVenue);
-    if (item.venues) return item.venues.includes(currentVenue);
-    return false;
-}
+                        }
+                    } catch (err) { console.warn("Coliseum Tracker parse error:", err); }
+                });
+            }
+            return ws;
+        };
+    }
 
-function isValidEncounter(item) {
-    if (!currentEnemies.length) return false;
-    return currentEnemies.some(enemy => enemyMatchesItem(enemy, item));
-}
+    function enemyMatchesItem(enemy, item) {
+        const enemyElementName = elementMap[enemy.element];
+        if (!item.enemies && !item.element && !item.venues && !item.allVenues) return true;
+        if (item.enemies) return item.enemies.includes(enemy.name);
+        if (item.additionalEnemies?.includes(enemy.name)) return true;
+        if (item.excludeEnemies?.includes(enemy.name)) return false;
+        if (item.element && !item.element.includes(enemyElementName)) return false;
+        if (item.allVenues) return !item.excludeVenues?.includes(currentVenue);
+        if (item.venues) return item.venues.includes(currentVenue);
+        return false;
+    }
 
-function countValidEnemies(item) {
-    if (!currentEnemies.length) return 0;
-    return currentEnemies.filter(enemy => enemyMatchesItem(enemy, item)).length;
-}
+    function isValidEncounter(item) {
+        if (!currentEnemies.length) return false;
+        return currentEnemies.some(enemy => enemyMatchesItem(enemy, item));
+    }
 
-function countValidEnemiesForCategory(category) {
-    if (!currentEnemies.length) return 0;
-    const items = itemsByCategory[category] ?? [];
-    return currentEnemies.filter(enemy =>
-        items.some(item => enemyMatchesItem(enemy, item))
-    ).length;
-}
+    function countValidEnemies(item) {
+        if (!currentEnemies.length) return 0;
+        return currentEnemies.filter(enemy => enemyMatchesItem(enemy, item)).length;
+    }
+
+    function countValidEnemiesForCategory(category) {
+        if (!currentEnemies.length) return 0;
+        const items = itemsByCategory[category] ?? [];
+        return currentEnemies.filter(enemy =>
+            items.some(item => enemyMatchesItem(enemy, item))
+        ).length;
+    }
 
 
     function ready(fn) {
@@ -641,13 +658,20 @@ input[type="checkbox"] {
         document.head.appendChild(style);
     }
 
-    function updateUI() {
+    function updateUI(drops = null) {
         const venueData = getVenueData(currentVenue);
         gcWinsDisplay.textContent = `Wins: ${venueData.battleCount}`;
         gcVenueText.textContent = venueDisplayMap[currentVenue] ?? currentVenue;
-        if (!gcContentBBCode.classList.contains("gc-hidden")) gcBBCodeScrollBox.textContent = formatBBCode();
-        if (!gcContentOverview.classList.contains("gc-hidden")) buildOverview();
-        if (!gcContentQuests.classList.contains("gc-hidden")) { renderActiveQuests(); renderCompletedQuests(); }
+        if (!gcContentBBCode.classList.contains("gc-hidden"))
+            gcBBCodeScrollBox.textContent = formatBBCode();
+        if (!gcContentOverview.classList.contains("gc-hidden")) {
+            if (drops) patchOverview(drops);
+            else buildOverview();
+        }
+        if (!gcContentQuests.classList.contains("gc-hidden")) {
+            renderActiveQuests();
+            renderCompletedQuests();
+        }
     }
 
     // Called when switching to a tab that may have stale content
@@ -688,17 +712,17 @@ input[type="checkbox"] {
         return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
     }
 
-    ready(() => { 
-            // --- Venue intercept (for battle 1 detection)
+    ready(() => {
+        // --- Venue intercept (for battle 1 detection)
         if (typeof window.venueSelect === 'function') {
             const originalVenueSelect = window.venueSelect;
-            window.venueSelect = function(venueId) {
+            window.venueSelect = function (venueId) {
                 sessionStorage.setItem('fr_coli_pendingVenue', venueId);
                 return originalVenueSelect.apply(this, arguments);
             };
         }
 
-            // --- Battle 1 venue + enemy detection
+        // --- Battle 1 venue + enemy detection
         const pendingVenue = sessionStorage.getItem('fr_coli_pendingVenue');
         if (pendingVenue) {
             currentVenue = venueKeyMap[parseInt(pendingVenue)] ?? currentVenue;
@@ -715,7 +739,8 @@ input[type="checkbox"] {
                 }
             }, 200);
         }
-        injectGCStyles(); buildUI(); updateUI(); applyColumnMode(); });
+        injectGCStyles(); buildUI(); updateUI(); applyColumnMode();
+    });
 
 
     // --- UI ELEMENT REFERENCES ---
@@ -762,7 +787,7 @@ input[type="checkbox"] {
 
     // Creates a labelled <select> inside parent, populates options, wires change listener.
     function makeSettingSelect(parent, labelText, options, value, applyFn, tooltip = "") {
-        const labelAttrs = { text: labelText};
+        const labelAttrs = { text: labelText };
         if (tooltip) labelAttrs.title = tooltip;
         parent.appendChild(el("label", labelAttrs));
         const select = parent.appendChild(el("select"));
@@ -932,27 +957,65 @@ input[type="checkbox"] {
             : `${window.innerWidth - toggleRect.right}px`;
     }
 
-function buildListHeader(iconName, title, targetEl = null, variant = "", key = null, rightText = "") {
-    const header = el("button", { class: `gc-flex-row-sb gc-listHeader${variant ? ` gc-listHeader--${variant}` : ""}` });
-    if (iconName) header.appendChild(createIcon(iconName));
-    header.appendChild(el("div", { text: title }));
-    if (rightText) header.appendChild(el("div", { text: rightText, style: "flex: 0 1 auto; font-weight: normal;" }));
-    const arrow = createIcon("CollapseExpand");
-    arrow.classList.add("gc-arrow");
-    if (targetEl) {
-        const collapsed = key ? (collapseStates[key] ?? false) : false;
-        if (collapsed) { targetEl.classList.add("gc-hidden"); arrow.classList.add("gc-collapsed"); }
-        header.addEventListener("click", () => {
-            const collapsed = targetEl.classList.toggle("gc-hidden");
-            arrow.classList.toggle("gc-collapsed", collapsed);
-            if (key) { collapseStates[key] = collapsed; saveCollapseStates(); }
-        });
+    function buildListHeader(iconName, title, targetEl = null, variant = "", key = null, rightText = "") {
+        const header = el("button", { class: `gc-flex-row-sb gc-listHeader${variant ? ` gc-listHeader--${variant}` : ""}` });
+        if (iconName) header.appendChild(createIcon(iconName));
+        header.appendChild(el("div", { text: title }));
+        if (rightText) header.appendChild(el("div", { text: rightText, style: "flex: 0 1 auto; font-weight: normal;" }));
+        const arrow = createIcon("CollapseExpand");
+        arrow.classList.add("gc-arrow");
+        if (targetEl) {
+            const collapsed = key ? (collapseStates[key] ?? false) : false;
+            if (collapsed) { targetEl.classList.add("gc-hidden"); arrow.classList.add("gc-collapsed"); }
+            header.addEventListener("click", () => {
+                const collapsed = targetEl.classList.toggle("gc-hidden");
+                arrow.classList.toggle("gc-collapsed", collapsed);
+                if (key) { collapseStates[key] = collapsed; saveCollapseStates(); }
+            });
+        }
+        header.appendChild(arrow);
+        return header;
     }
-    header.appendChild(arrow);
-    return header;
-}
+
+    function patchOverview(drops) {
+        // If viewing a different single venue than where we just won, nothing changed visually
+        if (overviewVenue !== "All" && overviewVenue !== currentVenue) return;
+
+        // All-venues view is complex to patch — full rebuild
+        if (overviewVenue === "All") { buildOverview(); return; }
+
+        // Amount-based sort means order may have changed — full rebuild
+        if (sortMode.includes("amount")) { buildOverview(); return; }
+
+        for (const [id] of drops) {
+            const idStr = String(id);
+            const amountEl = overviewAmountEls.get(idStr);
+            if (!amountEl) {
+                // New item — check if it should be visible in current filter
+                const item = itemIndex[idStr];
+                const category = item?.category ?? "Other";
+                const isHighlight = highlightSet.has(idStr);
+                const isFestival = festivalSet.has(idStr);
+                const shouldShow = activeCategory === "All" ||
+                    (activeCategory === "Highlights" && isHighlight && highlightMode !== "off") ||
+                    (activeCategory === "Festival" && isFestival && festivalMode !== "off") ||
+                    activeCategory === category;
+                if (shouldShow) { buildOverview(); return; }
+                continue; // filtered out anyway, skip
+            }
+            const totalAmount = getVenueData(currentVenue).loot[id] ?? 0;
+            amountEl.textContent = `x${totalAmount}`;
+        }
+
+        // Update wins display in place
+        if (overviewWinsEl && (activeCategory === "All" || activeCategory === "Wins")) {
+            overviewWinsEl.textContent = `Wins: ${getVenueData(currentVenue).battleCount}`;
+        }
+    }
 
     function buildOverview() {
+        overviewAmountEls.clear();
+        overviewWinsEl = null;
         gcOverviewScrollBox.innerHTML = "";
         const query = gcOverviewSearch?.value.trim().toLowerCase() ?? "";
         const isAllVenues = overviewVenue === "All";
@@ -960,12 +1023,13 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
 
         function buildWinsEntry(count) {
             const entry = el("div", { class: "gc-listEntry", style: "margin-bottom: 0.42em; margin-top: -0.42em; border: none;" });
-            entry.appendChild(el("div", { text: `Wins: ${count}`, style: "text-align: center"}));
+            const winsDiv = entry.appendChild(el("div", { text: `Wins: ${count}`, style: "text-align: center" }));
+            overviewWinsEl = winsDiv;
             return entry;
         }
 
         function matchesSearch(e) { return !query || e.name.toLowerCase().includes(query) || e.id.includes(query); }
-        
+
         function renderGroup(highlights, festivals, groups, venueLabel = null, battleCount = null) {
             const venueContent = el("div");
             const isCategorySort = sortMode.startsWith("category-");
@@ -973,14 +1037,22 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
             const filteredHighlights = highlights.filter(matchesSearch);
             if (isCategorySort && filteredHighlights.length > 0 && ((activeCategory === "All" && highlightMode !== "off") || activeCategory === "Highlights")) {
                 const section = el("div", { class: "gc-listSection" });
-                filteredHighlights.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount, null, e.isHighlight)));
+                filteredHighlights.forEach(e => {
+                    const entryEl = buildListEntry(e.category, e.name, e.amount, null, e.isHighlight);
+                    overviewAmountEls.set(e.id, entryEl._amountEl);
+                    section.appendChild(entryEl);
+                });
                 if (showHeader()) venueContent.appendChild(buildListHeader("Highlights", "Highlights", section, "", `overview_${keyPrefix}_Highlights`));
                 venueContent.appendChild(section);
             }
             const filteredFestivals = festivals.filter(matchesSearch);
             if (isCategorySort && filteredFestivals.length > 0 && ((activeCategory === "All" && festivalMode !== "off") || activeCategory === "Festival")) {
                 const section = el("div", { class: "gc-listSection" });
-                filteredFestivals.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount, null, e.isHighlight)));
+                filteredFestivals.forEach(e => {
+                    const entryEl = buildListEntry(e.category, e.name, e.amount, null, e.isHighlight);
+                    overviewAmountEls.set(e.id, entryEl._amountEl);
+                    section.appendChild(entryEl);
+                });
                 if (showHeader()) venueContent.appendChild(buildListHeader("Specialty", "Festival", section, "", `overview_${keyPrefix}_Festival`));
                 venueContent.appendChild(section);
             }
@@ -988,15 +1060,19 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
                 const filtered = group.entries.filter(matchesSearch);
                 if (filtered.length === 0) continue;
                 const section = el("div", { class: "gc-listSection" });
-                filtered.forEach(e => section.appendChild(buildListEntry(e.category, e.name, e.amount, null, e.isHighlight)));
+                filtered.forEach(e => {
+                    const entryEl = buildListEntry(e.category, e.name, e.amount, null, e.isHighlight);
+                    overviewAmountEls.set(e.id, entryEl._amountEl);
+                    section.appendChild(entryEl);
+                });
                 if (group.key && showHeader()) venueContent.appendChild(buildListHeader(group.key, group.key, section, "", `overview_${keyPrefix}_${group.key}`));
                 venueContent.appendChild(section);
             }
-            
+
             if (venueLabel && showHeader()) {
-                gcOverviewScrollBox.appendChild(buildListHeader(null, venueLabel, venueContent, "venue",`overview_venue_${venueLabel}`,battleCount !== null ? `Wins: ${battleCount}` : ""));
+                gcOverviewScrollBox.appendChild(buildListHeader(null, venueLabel, venueContent, "venue", `overview_venue_${venueLabel}`, battleCount !== null ? `Wins: ${battleCount}` : ""));
             }
-            
+
             gcOverviewScrollBox.appendChild(venueContent);
         }
 
@@ -1202,26 +1278,26 @@ function buildListHeader(iconName, title, targetEl = null, variant = "", key = n
             saveCollapseStates();
         });
 
-quest.goals.forEach((goal, index) => {
-    const row = el("div", { class: `gc-listEntry${goal.progress >= goal.target ? " gc-complete" : ""}` });
-    row.appendChild(el("div", { text: goalLabel(goal) }));
-    const battleStr = questBattleCountEnabled && goal.battleCount && (goal.type === "item" || goal.type === "category")
-        ? ` (${goal.battleCount} ${battleLabel})` : "";
-    row.appendChild(el("div", { text: `${Math.min(goal.progress, goal.target)}/${goal.target}${battleStr}`  , style: "flex: 0 1 auto; font-weight: normal;"}));
-    if (editMode && !isCompleted) {
-        const del = iconBtn("SmallX", "gc-delete");
-        del.addEventListener("click", () => {
-            quest.goals.splice(index, 1);
-            if (!quest.goals.length) {
-                activeQuests = activeQuests.filter(q => q.id !== quest.id);
+        quest.goals.forEach((goal, index) => {
+            const row = el("div", { class: `gc-listEntry${goal.progress >= goal.target ? " gc-complete" : ""}` });
+            row.appendChild(el("div", { text: goalLabel(goal) }));
+            const battleStr = questBattleCountEnabled && goal.battleCount && (goal.type === "item" || goal.type === "category")
+                ? ` (${goal.battleCount} ${battleLabel})` : "";
+            row.appendChild(el("div", { text: `${Math.min(goal.progress, goal.target)}/${goal.target}${battleStr}`, style: "flex: 0 1 auto; font-weight: normal;" }));
+            if (editMode && !isCompleted) {
+                const del = iconBtn("SmallX", "gc-delete");
+                del.addEventListener("click", () => {
+                    quest.goals.splice(index, 1);
+                    if (!quest.goals.length) {
+                        activeQuests = activeQuests.filter(q => q.id !== quest.id);
+                    }
+                    saveActiveQuests();
+                    renderActiveQuests();
+                });
+                row.appendChild(del);
             }
-            saveActiveQuests();
-            renderActiveQuests();
+            goals.appendChild(row);
         });
-        row.appendChild(del);
-    }
-    goals.appendChild(row);
-});
 
         wrapper.appendChild(header);
         wrapper.appendChild(goals);
@@ -1245,8 +1321,8 @@ quest.goals.forEach((goal, index) => {
         if (!q) return null;
         if (itemIndex[q]) return { itemId: q, itemName: itemIndex[q].name };
         const lower = q.toLowerCase();
-        const found = Object.entries(itemIndex).find(([, v]) => v.name.toLowerCase() === lower);
-        if (found) return { itemId: found[0], itemName: found[1].name };
+        const foundId = itemNameMap[lower];
+        if (foundId) return { itemId: foundId, itemName: itemIndex[foundId].name };
         return null;
     }
 
@@ -1460,7 +1536,7 @@ quest.goals.forEach((goal, index) => {
         refreshGoalsBox();
 
         const itemRow = el("div", { class: "gc-flex-row" });
-        const itemInput = itemRow.appendChild(el("input", { type: "text", placeholder: "Item name or ID", style: "padding-right: 0.42em;"}));
+        const itemInput = itemRow.appendChild(el("input", { type: "text", placeholder: "Item name or ID", style: "padding-right: 0.42em;" }));
         const itemAmount = itemRow.appendChild(el("input", { type: "number", placeholder: "Amount", class: "gc-input-narrow", min: "1" }));
         const addItemBtn = itemRow.appendChild(iconBtn("Add"));
         addItemBtn.addEventListener("click", () => {
@@ -1497,18 +1573,18 @@ quest.goals.forEach((goal, index) => {
             venueAmount.value = ""; refreshGoalsBox();
         });
 
-/*         const enemyRow = el("div", { class: "gc-flex-row" });
-        const enemyInput = enemyRow.appendChild(el("input", { type: "text", placeholder: "Enemy name" }));
-        const enemyAmount = enemyRow.appendChild(el("input", { type: "number", placeholder: "Battles", class: "gc-input-narrow", min: "1" }));
-        const addEnemyBtn = enemyRow.appendChild(iconBtn("Add"));
-        addEnemyBtn.addEventListener("click", () => {
-            const name = enemyInput.value.trim();
-            const amt = parseInt(enemyAmount.value);
-            if (!name || !amt || amt < 1) { flashInvalid(...(!name ? [enemyInput] : []), ...(!amt || amt < 1 ? [enemyAmount] : [])); return; }
-            pendingGoals.push({ type: "enemy", enemyName: name, target: amt, progress: 0 });
-            enemyInput.value = ""; enemyAmount.value = "";
-            refreshGoalsBox();
-        }); */
+        /*         const enemyRow = el("div", { class: "gc-flex-row" });
+                const enemyInput = enemyRow.appendChild(el("input", { type: "text", placeholder: "Enemy name" }));
+                const enemyAmount = enemyRow.appendChild(el("input", { type: "number", placeholder: "Battles", class: "gc-input-narrow", min: "1" }));
+                const addEnemyBtn = enemyRow.appendChild(iconBtn("Add"));
+                addEnemyBtn.addEventListener("click", () => {
+                    const name = enemyInput.value.trim();
+                    const amt = parseInt(enemyAmount.value);
+                    if (!name || !amt || amt < 1) { flashInvalid(...(!name ? [enemyInput] : []), ...(!amt || amt < 1 ? [enemyAmount] : [])); return; }
+                    pendingGoals.push({ type: "enemy", enemyName: name, target: amt, progress: 0 });
+                    enemyInput.value = ""; enemyAmount.value = "";
+                    refreshGoalsBox();
+                }); */
 
         const addQuestBtn = el("button", { class: "gc-buttonSmall", text: "Add Quest", style: "margin: 0 auto 0.41em auto;" });
         addQuestBtn.addEventListener("click", () => {
@@ -1537,7 +1613,7 @@ quest.goals.forEach((goal, index) => {
         gcContentQuests.appendChild(itemRow);
         gcContentQuests.appendChild(categoryRow);
         gcContentQuests.appendChild(venueRow);
-/*         gcContentQuests.appendChild(enemyRow); */
+        /*         gcContentQuests.appendChild(enemyRow); */
         gcContentQuests.appendChild(newQuestGoalsBox);
         gcContentQuests.appendChild(addQuestBtn);
         gcContentQuests.appendChild(completedHeader);
@@ -1627,7 +1703,7 @@ quest.goals.forEach((goal, index) => {
             v => { venueGroupMode = v; localStorage.setItem("fr_coli_groupMode", v); updateUI(); },
             "If showing loot from multiple venues, should loot be separated by venue or not");
 
-            displayCol.appendChild(dividerH());
+        displayCol.appendChild(dividerH());
 
         makeSettingSelect(displayCol, "Quest Battle Count:",
             [["on", "On"], ["off", "Off"]], questBattleCountEnabled ? "on" : "off",
@@ -1651,7 +1727,7 @@ quest.goals.forEach((goal, index) => {
         });
 
         makeSettingSelect(displayCol, "Font:",
-            [["Verdana, Geneva, sans-serif", "Verdana"],["Trebuchet MS, sans-serif", "Trebuchet MS"],["Arial, sans-serif", "Arial"],["Tahoma, Geneva, sans-serif", "Tahoma"],["Segoe UI, sans-serif", "Segoe UI"],["Georgia, serif", "Georgia"],["Palatino Linotype, Palatino, serif", "Palatino"],["Courier New, monospace", "Courier New"],["Comic Sans MS, sans-serif", "Comic Sans MS"]], savedFont,
+            [["Verdana, Geneva, sans-serif", "Verdana"], ["Trebuchet MS, sans-serif", "Trebuchet MS"], ["Arial, sans-serif", "Arial"], ["Tahoma, Geneva, sans-serif", "Tahoma"], ["Segoe UI, sans-serif", "Segoe UI"], ["Georgia, serif", "Georgia"], ["Palatino Linotype, Palatino, serif", "Palatino"], ["Courier New, monospace", "Courier New"], ["Comic Sans MS, sans-serif", "Comic Sans MS"]], savedFont,
             v => { savedFont = v; gcRoot.style.setProperty("--gc-FontFamily", v); localStorage.setItem("fr_coli_fontFamily", v); });
 
         displayCol.appendChild(dividerH());
@@ -1913,7 +1989,8 @@ quest.goals.forEach((goal, index) => {
         const entry = el("div", { class: "gc-listEntry" });
         entry.appendChild(createIcon(iconName, `width: 1.1em${isHighlight ? "; fill: var(--gc-highlightColor)" : ""}`));
         entry.appendChild(el("div", { text: name }));
-        entry.appendChild(el("div", { text: `x${amount}` }));
+        const amountEl = entry.appendChild(el("div", { text: `x${amount}` }));
+        entry._amountEl = amountEl;
         if (onDelete) {
             const deleteBtn = iconBtn("SmallX", "gc-delete");
             deleteBtn.addEventListener("click", onDelete);
