@@ -420,6 +420,7 @@
                         // Battle-load message: venue key is a string, enemies array follows
                         if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
                             currentVenue = jsonData[1][0];
+                            localStorage.setItem("fr_coli_currentVenue", currentVenue);
                             currentEnemies = jsonData[1][1].map(e => ({
                                 name: e[3].trim(),
                                 element: e[6]
@@ -713,32 +714,24 @@ input[type="checkbox"] {
     }
 
     ready(() => {
-        // --- Venue intercept (for battle 1 detection)
-        if (typeof window.venueSelect === 'function') {
-            const originalVenueSelect = window.venueSelect;
-            window.venueSelect = function (venueId) {
-                sessionStorage.setItem('fr_coli_pendingVenue', venueId);
-                return originalVenueSelect.apply(this, arguments);
-            };
-        }
 
-        // --- Battle 1 venue + enemy detection
-        const pendingVenue = sessionStorage.getItem('fr_coli_pendingVenue');
-        if (pendingVenue) {
-            currentVenue = venueKeyMap[parseInt(pendingVenue)] ?? currentVenue;
-            sessionStorage.removeItem('fr_coli_pendingVenue');
+        // Poll for first battle venue and enemy detection
+        // Only needed if a battle hasn't started yet via WS
+        const enemyPoll = setInterval(() => {
+            if (window._game?.enemies?.length > 0) {
+                clearInterval(enemyPoll);
+                currentVenue = window._game.room.stage.venueId ?? currentVenue;
+                localStorage.setItem("fr_coli_currentVenue", currentVenue);
+                currentEnemies = window._game.enemies.map(e => ({
+                    name: e.name.trim(),
+                    element: e.element
+                }));
+                updateUI();
+            }
+        }, 200);
+        // timeout if the enemyPoll for some reason doesn't get populated when a battle starts to ensure it doesn't keep running 
+        setTimeout(() => clearInterval(enemyPoll), 30000);
 
-            // Poll for _game.enemies to be populated
-            const enemyPoll = setInterval(() => {
-                if (window._game?.enemies?.length > 0) {
-                    clearInterval(enemyPoll);
-                    currentEnemies = window._game.enemies.map(e => ({
-                        name: e.name.trim(),
-                        element: e.element
-                    }));
-                }
-            }, 200);
-        }
         injectGCStyles(); buildUI(); updateUI(); applyColumnMode();
     });
 
