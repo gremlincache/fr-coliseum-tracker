@@ -117,6 +117,9 @@ _Theoretically_ the tool could use all available localStorage alloted to the sit
 ### The tool window is stuck off screen/I lost the toggle button
 The position of the tool can be reset by deleting or editing the fr_coli_toggleTop, fr_coli_toggleRight, fr_coli_posTop and fr_coli_posRight key/values in local storage. Local storage can be accessed by opening the DevTools > Application > Local storage.
 
+### I want to go back to the previous version!
+This can be done by using the script in the v.1.3.2 branch ..b
+
 ## Feedback and issues
 
 - Open an [issue on GitHub](https://github.com/gremlincache/fr-coliseum-tracker/issues) if you have a GitHub account
