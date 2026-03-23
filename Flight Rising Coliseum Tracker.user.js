@@ -2,18 +2,17 @@
 // @name         Flight Rising Coliseum Tracker
 // @namespace    https://tampermonkey.net/
 // @version      2.0
-// @description  Coliseum tracker with BBCode, categories, sorting, overview, dark and light theme and font sizes.
+// @description  Tool that tracks loot and battles fought in the Coliseum, with BBCode formatter, quests tracking, categories and highlights.
 // @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
 // @run-at       document-start
-// @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/beta/itemIndex.js
-// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/beta/Flight%20Rising%20Coliseum%20Tracker.user.js
-// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/beta/Flight%20Rising%20Coliseum%20Tracker.user.js
+// @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/main/itemIndex.js
+// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
+// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
 // ==/UserScript==
 
 (function () {
     'use strict';
-    //TODO ON FULL RELEASE: Update updateURL and downloadURL to use the main branch!!!!
     // --- Prevent double execution
     if (window.hasRunColiTracker) return;
     window.hasRunColiTracker = true;
@@ -33,31 +32,6 @@
         notn: ["7685", "7686", "7687", "7688", "15290", "15291", "15292", "15293", "7690", "7693", "7694", "7695", "7696", "15294", "15295", "15296", "15297", "7689"]
     };
 
-    const venueKeyMap = {
-        1: "training_fields",
-        2: "scorched_forest",
-        3: "forgotten_cave",
-        4: "waterway",
-        5: "arena",
-        6: "boreal_wood",
-        7: "harpys_roost",
-        9: "sandswept_delta",
-        10: "woodland_border",
-        11: "bamboo_waterfall",
-        12: "mire",
-        13: "kelp_beds",
-        14: "golem_workshop",
-        15: "rainsong_jungle",
-        16: "crystalspine_pools",
-        17: "ghostlight_ruins",
-        18: "redrock",
-        19: "volcanic_vents",
-        20: "blooming_grove",
-        21: "thunderhead_savanna",
-        22: "forbidden_portal",
-        23: "silk-strewn_wreckage",
-        24: "boneyard"
-    };
     const elementMap = {
         0: "neutral", 1: "earth", 2: "plague", 3: "wind", 4: "water", 5: "lightning", 6: "ice", 7: "shadow", 8: "light", 9: "arcane", 10: "nature", 11: "fire"
     };
@@ -97,7 +71,6 @@
         "golem_workshop": "Construct Workshop",
         "forbidden_portal": "Forbidden Portal",
     };
-    const venues = Object.values(venueDisplayMap);
 
     const categories = ["All", "Highlights", "Festival", "Food", "Materials", "Apparel", "Familiars", "Battle", "Skins", "Specialty", "Other", "Wins"];
     const categoryOrderMap = Object.create(null);
@@ -134,7 +107,7 @@
     // --- Theme definitions
     const defaultThemes = {
         Dark: {
-            "--gc-frame": "#121212", "--gc-icons": "#e0e0e0", "--gc-dividers": "#e0e0e0",
+            "--gc-frame": "#121212", "--gc-icons": "#e0e0e0",
             "--gc-header-text": "#e0e0e0", "--gc-main": "#2e2e2e", "--gc-main-accent": "#212121",
             "--gc-main-text": "#e0e0e0", "--gc-border": "#000000", "--gc-button": "#e0e0e0",
             "--gc-button-text": "#212121", "--gc-deleteColor": "#b80000", "--gc-deleteColor-accent": "#e0e0e0",
@@ -143,7 +116,7 @@
             "--gc-venueHeader": "#ffffff", "--gc-venueHeader-accent": "#292929", "--gc-entryIcons": "#c2c2c2",
         },
         Light: {
-            "--gc-frame": "#fafafa", "--gc-icons": "#454545", "--gc-dividers": "#c2c2c2",
+            "--gc-frame": "#fafafa", "--gc-icons": "#454545",
             "--gc-header-text": "#454545", "--gc-main": "#f2f2f2", "--gc-main-accent": "#e3e3e3",
             "--gc-main-text": "#454545", "--gc-border": "#f7f7f7", "--gc-button": "#454545",
             "--gc-button-text": "#f7f7f7", "--gc-deleteColor": "#d93636", "--gc-deleteColor-accent": "#f2f2f2",
@@ -155,7 +128,7 @@
 
     // Each entry: [label, css variable name]
     const colorVars = [
-        ["Frame", "--gc-frame"], ["Icons", "--gc-icons"], ["Dividers", "--gc-dividers"],
+        ["Frame", "--gc-frame"], ["Icons", "--gc-icons"],
         ["Header Text", "--gc-header-text"], ["Main", "--gc-main"], ["Main Accent", "--gc-main-accent"],
         ["Main Text", "--gc-main-text"], ["Border", "--gc-border"], ["Button", "--gc-button"],
         ["Button Text", "--gc-button-text"], ["Delete", "--gc-deleteColor"], ["Delete Text", "--gc-deleteColor-accent"],
@@ -177,8 +150,9 @@
 
     const venueDataCache = {};
     function getVenueData(v) {
-        if (!venueDataCache[v])
-            venueDataCache[v] = JSON.parse(localStorage.getItem(`fr_coli_data_${v}`) || '{"battleCount":0,"loot":{}}');
+        if (!venueDataCache[v]) {
+            venueDataCache[v] = JSON.parse(localStorage.getItem(`fr_coli_data_${v}`) || '{"battleCount":0,"loot":{}}')
+        };
         return venueDataCache[v];
     }
     function saveVenueData(v, d) {
@@ -187,7 +161,7 @@
     }
 
     const overviewAmountEls = new Map(); // itemId -> amount DOM element
-    let overviewWinsEl = null;           // reference to wins display in overview
+    let overviewWinsEl = null; // reference to wins display in overview
     const highlightSet = new Set((highlightPreset || []).map(String));
 
     const itemsByCategory = Object.create(null);
@@ -318,7 +292,8 @@
 
     function formatBBCode() {
         let result = "";
-        const isAllVenues = bbcodeVenue === "All";
+        const resolvedVenue = bbcodeVenue === "current" ? currentVenue : bbcodeVenue;
+        const isAllVenues = resolvedVenue === "All";
         const isGrouped = venueGroupMode === "grouped";
 
         function formatEntry(e) {
@@ -355,7 +330,7 @@
         // Wraps loot content with a styled header, or just the content if no header applies.
         function formatSection(title, lootStr, useHidden) {
             if (!title || !showHeader()) return lootStr + "\n\n";
-            if (bbcodeLayout === "plain") return `${title}\n${lootStr}\n\n`;
+            if (bbcodeHeaderStyle === "plain" || bbcodeLayout === "plain") return `${title}\n${lootStr}\n\n`;
             if (useHidden) return `[hidden title=${title}]\n${lootStr}\n[/hidden]\n\n`;
             return `[center][b]${title}[/b][/center]\n${lootStr}\n\n`;
         }
@@ -393,13 +368,13 @@
                 }
             }
         } else {
-            const battleCount = bbcodeVenue === "All"
+            const battleCount = resolvedVenue === "All"
                 ? Object.keys(venueDisplayMap).reduce((sum, k) => sum + getVenueData(k).battleCount, 0)
-                : getVenueData(bbcodeVenue).battleCount;
+                : getVenueData(resolvedVenue).battleCount;
             if (activeCategory === "All" || activeCategory === "Wins") {
                 result += `Battles: ${battleCount}\n\n`;
             }
-            const { highlights, festivals, groups } = buildLootModel(bbcodeVenue, sortMode, activeCategory, highlightMode, festivalMode);
+            const { highlights, festivals, groups } = buildLootModel(resolvedVenue, sortMode, activeCategory, highlightMode, festivalMode);
             result += formatLootModel(highlights, festivals, groups);
         }
         return result.trim();
@@ -487,13 +462,12 @@
     const svgSprites = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svgSprites.setAttribute("style", "display: none");
     svgSprites.innerHTML = `<symbol id="gc-svgHandle" viewBox="0 0 50 80"><path d="M8.986 62.011a9 9 0 1 1-9 9 9 9 0 0 1 9-9m32 0a9 9 0 1 1-9 9 9 9 0 0 1 9-9m-32-31a9 9 0 1 1-9 9 9 9 0 0 1 9-9m32 0a9 9 0 1 1-9 9 9 9 0 0 1 9-9m-32-31a9 9 0 1 1-9 9 9 9 0 0 1 9-9m32 0a9 9 0 1 1-9 9 9 9 0 0 1 9-9"/></symbol>
-        <symbol id ="gc-svgGear"viewBox="0 0 50 50"><path d="M49.822 27.92a4.95 4.95 0 0 1-4.329 4.8c-3.907.614-4 .153-4.731 1.426s-.288 1.123 1.138 4.824a4.954 4.954 0 0 1-1.975 6.158l-5.094 2.963a4.93 4.93 0 0 1-6.31-1.359c-2.483-3.087-2.131-3.4-3.6-3.4s-1.113.31-3.6 3.4a4.92 4.92 0 0 1-6.3 1.363l-5.133-2.947a4.954 4.954 0 0 1-1.975-6.158c1.423-3.7 1.867-3.55 1.135-4.823s-.824-.812-4.731-1.426a4.945 4.945 0 0 1-4.329-4.794L0 22.04a4.95 4.95 0 0 1 4.329-4.8c3.907-.614 4-.153 4.731-1.426s.289-1.122-1.135-4.823A4.954 4.954 0 0 1 9.9 4.832l5.111-2.987a4.92 4.92 0 0 1 6.3 1.363c2.484 3.087 2.131 3.4 3.6 3.4s1.113-.31 3.6-3.4a4.92 4.92 0 0 1 6.3-1.363l5.123 2.967a4.954 4.954 0 0 1 1.975 6.158c-1.423 3.7-1.867 3.55-1.135 4.823s.826.807 4.731 1.426a4.945 4.945 0 0 1 4.329 4.795ZM24.911 16.885a8.085 8.085 0 1 0 8.059 8.085 8.07 8.07 0 0 0-8.059-8.085"/></symbol>
+        <symbol id="gc-svgGear" viewBox="0 0 50 50"><path d="M49.822 27.92a4.95 4.95 0 0 1-4.329 4.8c-3.907.614-4 .153-4.731 1.426s-.288 1.123 1.138 4.824a4.954 4.954 0 0 1-1.975 6.158l-5.094 2.963a4.93 4.93 0 0 1-6.31-1.359c-2.483-3.087-2.131-3.4-3.6-3.4s-1.113.31-3.6 3.4a4.92 4.92 0 0 1-6.3 1.363l-5.133-2.947a4.954 4.954 0 0 1-1.975-6.158c1.423-3.7 1.867-3.55 1.135-4.823s-.824-.812-4.731-1.426a4.945 4.945 0 0 1-4.329-4.794L0 22.04a4.95 4.95 0 0 1 4.329-4.8c3.907-.614 4-.153 4.731-1.426s.289-1.122-1.135-4.823A4.954 4.954 0 0 1 9.9 4.832l5.111-2.987a4.92 4.92 0 0 1 6.3 1.363c2.484 3.087 2.131 3.4 3.6 3.4s1.113-.31 3.6-3.4a4.92 4.92 0 0 1 6.3-1.363l5.123 2.967a4.954 4.954 0 0 1 1.975 6.158c-1.423 3.7-1.867 3.55-1.135 4.823s.826.807 4.731 1.426a4.945 4.945 0 0 1 4.329 4.795ZM24.911 16.885a8.085 8.085 0 1 0 8.059 8.085 8.07 8.07 0 0 0-8.059-8.085"/></symbol>
         <symbol id="gc-svgCopy" viewBox="0 0 70 70"><path d="M60.013,70.000 L10.013,70.000 C4.490,70.000 0.013,65.523 0.013,60.000 L0.013,10.000 C0.013,4.477 4.490,-0.000 10.013,-0.000 L60.013,-0.000 C65.536,-0.000 70.013,4.477 70.013,10.000 L70.013,60.000 C70.013,65.523 65.536,70.000 60.013,70.000 ZM11.830,31.162 L11.830,53.801 C11.830,56.206 13.779,58.155 16.183,58.155 L38.822,58.155 C41.227,58.155 43.176,56.206 43.176,53.801 L43.176,31.162 C43.176,28.758 41.227,26.809 38.822,26.809 L16.183,26.809 C13.779,26.809 11.830,28.758 11.830,31.162 ZM58.144,16.194 C58.144,13.789 56.194,11.840 53.790,11.840 L31.151,11.840 C28.746,11.840 26.797,13.789 26.797,16.194 L26.797,21.418 L44.212,21.418 C46.616,21.418 48.565,23.367 48.565,25.772 L48.565,43.187 L53.790,43.187 C56.194,43.187 58.144,41.237 58.144,38.833 L58.144,16.194 Z"/></symbol>
         <symbol id="gc-svgCollapseExpand" viewBox="0 0 50 50"><path d="M22.909 12.837a3 3 0 0 1 4.285 0L47.841 33.9A3 3 0 0 1 45.7 39H4.4a3 3 0 0 1-2.142-5.1Z"/></symbol>
         <symbol id="gc-svgEdit" viewBox="0 0 50 50"><path d="M26.155 1.95c2.779-2.788 6.982-3.093 9.386-.681l4.354 4.367c2.4 2.412 2.1 6.627-.679 9.416l-3.523 3.534c-1.558 1.563-4.77.875-7.175-1.537l-4.354-4.367c-2.4-2.412-3.091-5.634-1.533-7.2Zm5.008 21.179c.9-.907.252-1.595-.8-1.828a7.2 7.2 0 0 1-3.863-2.233L22.151 14.7a7.25 7.25 0 0 1-2.227-3.87c-.232-1.055-.918-1.709-1.822-.8L2 26.182C-.015 28.2-.762 38.558.98 40.305s12.066 1 14.079-1.022ZM1.9 44.8h45.93a2 2 0 0 1 2 2v1.191a2 2 0 0 1-2 2H1.9a2 2 0 0 1-2-2V46.8a2 2 0 0 1 2-2"/></symbol>
         <symbol id="gc-svgSearch" viewBox="0 0 50 50"><path d="M48.856 24.185a24.28 24.28 0 0 1-4.993 14.755c.021.02.045.032.067.053l4.67 4.686c3.51 3.521-1.109 8.154-4.619 4.633l-4.671-4.688c-.022-.022-.033-.045-.054-.067A24.244 24.244 0 0 1 .275 24.185a24.29 24.29 0 1 1 48.581 0M24.569 6A18.184 18.184 0 1 0 42.7 24.187 18.155 18.155 0 0 0 24.569 6"/></symbol>
         <symbol id="gc-svgHighlights" viewBox="0 0 50 50"><path d="M20.845 4.527a4.561 4.561 0 0 1 8.158 0l5.222 10.437 11.54 1.213a4.561 4.561 0 0 1 2.455 8.03l-8.246 6.917 2.333 10.535a4.561 4.561 0 0 1-6.543 5.04l-10.84-5.588-10.84 5.589a4.561 4.561 0 0 1-6.543-5.04l2.334-10.536-8.246-6.918a4.561 4.561 0 0 1 2.455-8.03l11.54-1.213Z"/></symbol>
-        <symbol id="gc-svgBigX" viewBox="0 0 50 50"><path d="m30.942 24.988 16.511 16.565a4.282 4.282 0 1 1-6.046 6.065L24.9 31.054 8.38 47.622a4.277 4.277 0 0 1-6.039-6.058L18.857 25 2.341 8.427a4.282 4.282 0 0 1 6.046-6.065L24.9 18.93 41.414 2.365a4.277 4.277 0 0 1 6.039 6.058Z"/></symbol>
         <symbol id="gc-svgSmallX" viewBox="0 0 50 50"><path d="m39.744 16.22-8.732 8.76 8.715 8.743a4.325 4.325 0 0 1-6.107 6.126l-8.716-8.743-8.7 8.725a4.325 4.325 0 0 1-6.104-6.125l8.7-8.725-8.714-8.742a4.325 4.325 0 0 1 6.107-6.126l8.714 8.742 8.732-8.76a4.325 4.325 0 1 1 6.105 6.125"/></symbol>
         <symbol id="gc-svgFood" viewBox="0 0 50 50"><path d="M23.234 2.384c-17.2 2.3-16.5 19.36-12.019 23.9 7.345 7.439 11.857 1.829 16.832 9.882C35.6 48.4 48.66 41.372 46.24 27.2 43.458 10.916 35.373.761 23.234 2.384M5.614 18.918c.065 4.631.835 7.291 3.2 9.686 7.345 7.439 11.627 1.251 16.6 9.3 4.547 7.361 8.613 8.519 13.327 7.307-2.3 3.086-9.688 6.311-15.659-3.356-4.975-8.053-9.612-2.516-16.957-9.956C3 28.733 2.508 21.8 5.614 18.918M26.389 8.276c3.325 1.218 5.182 4.508 4.148 7.349s-4.567 4.158-7.892 2.94-5.182-4.508-4.148-7.349 4.567-4.157 7.892-2.94m-.889 2.447a3.153 3.153 0 0 1 2.175 3.854 3.14 3.14 0 0 1-4.139 1.542 3.153 3.153 0 0 1-2.175-3.854 3.14 3.14 0 0 1 4.139-1.542"/></symbol>
         <symbol id="gc-svgApparel" viewBox="0 0 50 50"><path d="M31.085 14.872a3.07 3.07 0 0 0 .517 2.56A3.36 3.36 0 0 1 37 16.238c-3.1 1.038-5.23 3.295-5.216 3.7-.013-.357-.678 1.178-.086 3.026.119.372 4.131 1.474 5.65 2.19-2.447 2.491-5.4.238-5.649.427a1.55 1.55 0 0 0-.344 1.676s2.281 6.313 10.977 5.509c8.962-.829 9.725-20.8 4.07-24.95-6.746-4.945-15.317 7.056-15.317 7.056m-5.95-.307a3.7 3.7 0 0 1 3.7 3.7v7.4a3.7 3.7 0 0 1-7.406 0v-7.4a3.7 3.7 0 0 1 3.706-3.7m-6.094.157a3.07 3.07 0 0 1-.517 2.56 3.36 3.36 0 0 0-5.394-1.193c3.1 1.038 5.23 3.295 5.216 3.7.013-.357.678 1.178.086 3.026-.119.372-4.131 1.474-5.65 2.19 2.447 2.491 5.4.238 5.649.427a1.55 1.55 0 0 1 .344 1.676s-2.282 6.31-10.975 5.505c-8.963-.829-9.725-20.8-4.07-24.95 6.739-4.941 15.31 7.06 15.31 7.06Zm1.435 16.194a8.9 8.9 0 0 1-4.7 3.184c-2.037.549-8.25 8.292-8.356 9.253s5.42.427 5.42.427 1.258 5.247 1.973 4.68c6.717-5.337 9.167-15.955 9.167-15.955Zm9.361 0a8.9 8.9 0 0 0 4.7 3.184c2.038.549 8.25 8.292 8.356 9.253s-5.42.427-5.42.427-1.258 5.247-1.972 4.68c-6.717-5.337-9.167-15.955-9.167-15.955Z"/></symbol>
@@ -504,17 +478,18 @@
         <symbol id="gc-svgSpecialty" viewBox="0 0 50 50"><path d="M25.655 18.012c-.522-6.351-7.512-13.367-7.512-13.367C15.69 2.183 19.37-1.509 21.824.953c0 0 7.479 7.506 8.843 15.6a14.5 14.5 0 0 0-5.012 1.459M15.094 8.935l-6.17 6.188a1.707 1.707 0 0 1-2.419 0l-.035-.035a1.72 1.72 0 0 1 0-2.427l6.17-6.188a1.707 1.707 0 0 1 2.419 0l.035.035a1.72 1.72 0 0 1 0 2.427m.287 10.8a1.56 1.56 0 0 1-2.212 0l-.243-.235a1.57 1.57 0 0 1 0-2.218l4.329-4.342a1.56 1.56 0 0 1 2.212 0l.242.243a1.57 1.57 0 0 1 0 2.218Zm8.284 3.983c10.428-10.461 25.151 4.308 25.151 4.308 2.454 2.461-1.227 6.154-3.681 3.692 0 0-11.042-11.076-17.79-4.308C16.917 37.874.967 21.875.967 21.875c-2.454-2.461 1.227-6.154 3.681-3.692 0 0 12.269 12.307 19.016 5.538Zm-3.591 10.7a14.2 14.2 0 0 0 5.1-1.277c.315 5.944 6.463 12.115 6.463 12.115 2.454 2.461-1.227 6.154-3.681 3.692.002.002-6.823-6.848-7.883-14.528Zm16.783-1.794-4.329 4.342a1.56 1.56 0 0 1-2.211 0l-.242-.243a1.57 1.57 0 0 1 0-2.218l4.325-4.34a1.56 1.56 0 0 1 2.212 0l.242.243a1.57 1.57 0 0 1 .002 2.218Zm-2.167 8.342 6.169-6.188a1.707 1.707 0 0 1 2.419 0l.035.035a1.72 1.72 0 0 1 0 2.427l-6.17 6.19a1.707 1.707 0 0 1-2.419 0l-.035-.035a1.72 1.72 0 0 1 0-2.427ZM6.612 31.044a1 1 0 0 1 1.826 0l1.668 3.813 3.8 1.673a1 1 0 0 1 0 1.831l-3.8 1.673-1.668 3.814a1 1 0 0 1-1.826 0l-1.668-3.813-3.8-1.673a1 1 0 0 1 0-1.831l3.8-1.673Zm8.819 11a.852.852 0 0 1 1.562 0l.781 1.786 1.78.783a.857.857 0 0 1 0 1.567l-1.78.784-.781 1.785a.852.852 0 0 1-1.562 0l-.781-1.784-1.78-.784a.857.857 0 0 1 0-1.567l1.78-.783ZM40.549.686a1 1 0 0 1 1.826 0L44.482 5.5l4.8 2.114a1 1 0 0 1 0 1.831l-4.8 2.114-2.107 4.817a1 1 0 0 1-1.826 0l-2.107-4.817-4.8-2.114a1 1 0 0 1 0-1.831l4.8-2.114Z"/></symbol>
         <symbol id="gc-svgOther" viewBox="0 0 50 50"><path d="M25.066 17.073c8.809 0 20.463 10.549 20.463 21.888S33.875 48.968 25.066 48.968 4.6 50.3 4.6 38.96s11.657-21.887 20.466-21.887M18.4 14.247s7.337-3.128 12.729.819c5.406-3.612 8.468-7.98 8.116-9.742S33.289-.821 31.55 2.567c-.8 3.036-6.329 3.046-5.626.11S13.633-1 14.755 3.059c.615 3.012-3.069 1.05-4.005 2.46s1.662 9.859 7.65 8.728"/></symbol>
         <symbol id="gc-svgAdd" viewBox="0 0 50 50"><path d="M37.604,25.257 L25.236,25.277 L25.216,37.622 C25.206,43.467 16.557,43.481 16.566,37.636 L16.586,25.290 L4.266,25.310 C-1.424,25.319 -1.410,16.669 4.280,16.660 L16.599,16.641 L16.619,4.297 C16.628,-1.429 25.278,-1.443 25.269,4.284 L25.249,16.627 L37.618,16.607 C43.463,16.598 43.449,25.248 37.604,25.257 Z"/></symbol>
-        <symbol id="gc-svgMini" viewBox="0 0 50 10"><path d="M4.266,9.310 C-1.404,9.319 -1.390,0.669 4.280,0.660 L37.618,0.607 C43.448,0.598 43.434,9.248 37.604,9.257 L4.266,9.310 Z"/></symbol>
-        <symbol id="gc-svgCheck" viewBox="0 0 70 50"><path d="M26.259,45.956 C32.519,36.721 48.966,6.639 48.966,6.639 C51.794,1.723 44.361,-2.704 41.533,2.212 L22.274,35.562 L8.114,22.529 C4.097,18.525 -2.103,24.559 1.913,28.563 C1.913,28.563 19.019,45.675 19.306,45.962 C21.943,48.600 24.667,48.304 26.259,45.956 Z"/></symbol>`;
+        <symbol id="gc-svgCheck" viewBox="0 0 70 50"><path d="M26.259,45.956 C32.519,36.721 48.966,6.639 48.966,6.639 C51.794,1.723 44.361,-2.704 41.533,2.212 L22.274,35.562 L8.114,22.529 C4.097,18.525 -2.103,24.559 1.913,28.563 C1.913,28.563 19.019,45.675 19.306,45.962 C21.943,48.600 24.667,48.304 26.259,45.956 Z"/></symbol>
+        <symbol id="gc-svgBigIcon" viewBox="0 0 50 50"><path d="M48.917 44.243s-2.592.07-3.496.131c-2.744-1.386-4.058-.498-4.058-.498s-1.618-1.882-4.295-1.863c-1.412.009-3.743 2.067-3.743 2.067s-.512 1.119-.637 1.736c-4.494 1.46-6.284 2.29-6.625 2.116-.575-.291 6.354-13.132 20.013-12.822 1.256-.086 2.895.226 3.028 2.103.027.394-3.135.02-3.708 1.613 3.246.278 4.551.877 4.548 1.281-.021 2.792-1.027 4.136-1.027 4.136m-4.512-24.389c-.84-.408-.523-.824-.012-.726 1.466.28 2.878.273 3.648-3.199.469-2.112.453-3.263-.82-3.798-.982-.412-2.941-.059-3.781 2.858-.751 3.254-2.396 18.602-5.645 19.175-3.169.559-2.819-3.701-2.819-3.701s-7.642-3.914-8.7-4.451c1.388-4.732 2.484-15.701 3.094-18.086.838-3.275 3.222-5.148 5.337-4.17 2.131.985 11.284 5.242 13.381 6.212 2.113.977 1.88 3.412 1.035 6.612-.843 3.194-2.625 4.29-4.718 3.274m-3.488-3.34-2.608-1.273-.29 1.937 2.609 1.274zm-.639 4.876-3.261-1.592-.289 1.937 3.261 1.592zm-.929 6.812.29-1.937-7.827-3.82-.289 1.937zm-3.636-9.04-1.305-.637-.289 1.937 1.304.637zm-6.51 2.01-.289 1.937 1.304.637.29-1.937zm.35-2.938 3.261 1.591.29-1.937-3.261-1.591zm.929-6.813-.29 1.938 6.523 3.183.289-1.937zm1.392-4.829-.289 1.937 3.913 1.91.29-1.938zm5.218 2.546-.289 1.937 5.217 2.547.29-1.937zM19.511 22.44c-3.013 2.919.05 6.803.05 6.803s-2.319.234-3.992-.017c-.52-.078-2.908-2.531-2.908-2.531s.306-1.497.168-1.797c-.072-.247-2.701-3.95-3.832-3.39-.848-1.12-1.543-1.873-1.962-2.159-.179-.719.646-.679 1.615-.504 3.111.16 8.781.736 13.383-4.416 1.122-1.256 4.072-1.049 5.014 1.518-.461 5.335-2.121 9.318-2.121 9.318s-4.761-2.688-5.415-2.825m.385-11.744c.976-.706 2.143 1.386.569 2.855-4.208 3.927-7.474 4.195-12.015 3.675-1.171-.492-1.976-2.562-.167-2.966 5.428.203 8.049-.133 11.613-3.564m-1.37-.749c-2.417 2.587-5.972 3.189-10.115 3.144-1.788-.121-3.302-.212-5.788-3.56-.692-.933 1.085-1.535 1.085-1.535L1.843 5.799S4.985 1.56 13.286.961c.504 5.025 2.244 5.837 2.244 5.837s-.443-4.583.771-4.944c1.214-.362 5.324-1.628 5.233-.926-1.126 8.654-2.511 8.487-3.008 9.019M7.021 22.045c.408.498.789 1.171 1.021 1.683-.058 1.9-2.852 4.679-4.976 4.679-.644-.225-1.145-.708-1.617-1.123-1.427-1.519 4.144-6.757 5.572-5.239M4.543 33.788c.508.129 1.617.172 1.617.172L8 37s-.082 4.068.032 5.727c.724 1.055 3.36 3.375 6.303 4.613-2.178.259-8.194.056-11.504-4.5C.43 39.535-.113 32.978 1.373 29.484c-.287 2.182 1.645 3.096 3.17 4.304m6.633-7.794c.161 1.638-4.141 6.113-5.814 5.811-1.535-.667-2.702-1.614-2.322-2.021 2.22.973 7.198-3.723 6.227-6.368.341-.321 1.868 1.702 1.909 2.578m24.146 9.121c-1.116.105-13.55-6.446-14.102-6.77-.589-.345-1.898-1.446-1.411-3.98l13.714 7.008s-.478 2.306 1.799 3.742m-11.576-3.612s9.058 4.409 10.25 5.14c-.427.228-5.578 3.614-6.846 5.793 1.626-7.282-3.404-10.933-3.404-10.933M9.383 35.378 7.099 32.95c1.247.038 5.092-3.531 5.132-4.825l2.283 2.428c.723.769 6.321-.054 7.188.868 6.553 6.969 2.866 14.973 2.866 14.973s-8.208 3.181-14.761-3.788c-.867-.922.299-6.459-.424-7.228m2.028 6.143c5.487 5.835 11.76 3.391 11.76 3.391s2.836-6.121-2.651-11.957c-.726-.772-5.697-.015-6.302-.659l-1.492-1.586c-.025.789-2.522 2.91-3.077 2.893l1.492 1.586c.605.644-.456 5.559.27 6.332m6.611-3.365c2.162-.95.874-4.327 1.397-3.771 3.949 4.2 2.437 9.076 2.437 9.076s-5.045 1.264-8.941-2.987c-.41-4.23 2.806-1.307 5.107-2.318m19.215 5.571c2.51-.251 4.844 3.884 4.142 4.305-.703.422-6.473.997-7.457.154-.984-.844.943-4.222 3.315-4.459m9.421 3.772c-1.518.63-3.486-.068-3.486-.068l-1-2.177s2.246-1.029 4.486 2.245"/></symbol>
+        <symbol id="gc-svgSmallIcon" viewBox="0 0 50 50"><path d="M49.635 21.339c-1.084 5.148-4.033 8.498-7.625 7.086-1.441-.567-.337-2.738.524-2.633 2.082.256 2.976-2.52 3.252-5.771.205-3.441-.692-5.169-2.134-5.591-1.698-.496-4.504.609-5.001 3.845-.924 5.235-1.772 28.967-7.13 30.188-5.227 1.19-4.933-7.843-4.933-7.843l-15.357-6.331c1.837-7.642 2.474-22.03 3.251-25.872 1.068-5.278 4.853-8.479 8.477-7.13 3.653 1.36 19.34 7.237 22.935 8.575 3.621 1.348 4.827 6.317 3.741 11.477M34.599 23.88l-4.478-1.77-.287 4.695 4.478 1.77zm-1.964 15.038.288-4.696-11.195-4.425-.287 4.695zm-17.922-7.085 4.478 1.77.287-4.696L15 27.137zm1.878-15.279-.287 4.695 11.194 4.426.287-4.696zm1.932-9.76-.288 4.696 6.717 2.655.287-4.695zm8.955 3.541-.287 4.695 8.955 3.541.288-4.696zm-.334 40.654C18.405 47.61 2.862 40.758 2.862 40.758S-.651 38.856.199 33.059l23.57 9.806s-.565 6.063 3.375 8.124"/></symbol>`;
 
     const gcStyles = `
 .gc-root {
-    --gc-frame: #7a0404; --gc-icons: #FFC600; --gc-dividers: #0084FF; --gc-header-text: #67FFA1;
-    --gc-main: #FF00EE; --gc-main-accent: #009428; --gc-main-text: #00FF99; --gc-border: #FF9900;
-    --gc-border-alt: #000000; --gc-button: #00FF08; --gc-button-text: #FF00E5;
-    --gc-deleteColor: #ff0000; --gc-deleteColor-accent: #ffffff; --gc-highlightColor: #fffb00;
-    --gc-contentDivider: #A100FF; --gc-overviewHeader: #b39aa6; --gc-overviewHeader-accent: #800e4d;
-    --gc-venueHeader: #b39aa6; --gc-venueHeader-accent: #b39aa6; --gc-entryIcons: #ffffff;
+    --gc-frame: #121212; --gc-icons: #e0e0e0; --gc-header-text: #e0e0e0;
+    --gc-main: #2e2e2e; --gc-main-accent: #212121; --gc-main-text: #e0e0e0; --gc-border: #000000;
+    --gc-button: #e0e0e0; --gc-button-text: #212121;
+    --gc-deleteColor: #b80000; --gc-deleteColor-accent: #e0e0e0; --gc-highlightColor: #d99b45;
+    --gc-contentDivider: #121212; --gc-overviewHeader: #dedede; --gc-overviewHeader-accent: #121212;
+    --gc-venueHeader: #ffffff; --gc-venueHeader-accent: #292929; --gc-entryIcons: #c2c2c2;
     --gc-FontFamily: Verdana, Geneva, sans-serif; --gc-fontSize: 12px; --gc-colWidth: auto;
     font-size: var(--gc-fontSize); font-family: var(--gc-FontFamily);
     line-height: 1.25em; color: var(--gc-main-text); overflow: visible;
@@ -583,7 +558,7 @@ input[type="checkbox"] {
 .gc-searchbar {
     flex: 1 1 0; display: flex; border: 1px solid var(--gc-border); border-radius: 4em;
     color: var(--gc-main-text); background-color: var(--gc-main-accent); padding: 0.42em 0.83em 0.42em 0.83em;
-    & input { background-color: inherit; padding: 0; padding-left: 2px; border-radius: 0px; }
+    & input { background-color: inherit; padding: 0; padding-left: 2px; border-radius: 0px; min-width: 5em; }
     & > button > svg { fill: var(--gc-main-text); }
 }
 .gc-mainContent {
@@ -594,8 +569,8 @@ input[type="checkbox"] {
     display: grid; align-items: center; justify-content: right; grid-template-columns: 1fr 1fr auto;
     background-color: var(--gc-frame); padding: 0.83em; gap: 0.83em; border-top: 1px solid var(--gc-border);
 }
-.gc-divider-v { background-color: var(--gc-dividers); width: 1px; align-self: stretch; min-height: 2em; padding: 0px; }
-.gc-divider-h { height: 1px; background-color: var(--gc-dividers); grid-column: 1 / -1; flex: 0 0 auto; }
+.gc-divider-v { background-color: var(--gc-icons); width: 1px; align-self: stretch; min-height: 2em; padding: 0px; }
+.gc-divider-h { height: 1px; background-color: var(--gc-contentDivider); grid-column: 1 / -1; flex: 0 0 auto; }
 .gc-scrollBox {
     flex: 1 1 auto; display: flex; flex-flow: column; background-color: var(--gc-main-accent);
     padding: 0.83em; border-radius: 4px; border: 1px solid var(--gc-border); overflow: auto; min-width: 0; min-height: 0;
@@ -628,7 +603,6 @@ input[type="checkbox"] {
 .gc-flex-col {
     flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0.83em;
     padding: 0.83em; overflow: auto; align-content: center; align-items: center;
-    .gc-divider-h { background-color: var(--gc-contentDivider); }
 }
 .gc-hidden { display: none; }
 .gc-arrow { transform: scaleY(-1); transition: transform 0.6s ease; }
@@ -643,7 +617,7 @@ input[type="checkbox"] {
     position: fixed; background-color: var(--gc-button); color: var(--gc-button-text);
     border: 1px solid var(--gc-border); border-radius: 5px; padding: 0.5em 1em;
     font-size: var(--gc-fontSize); font-family: var(--gc-FontFamily); pointer-events: none;
-    opacity: 0; transition: opacity 0.3s ease; z-index: 10; white-space: nowrap;
+    opacity: 0; transition: opacity 0.3s ease; z-index: 10; max-width: 16em;
 }
 .gc-Notification.gc-visible { opacity: 1; }
 .gc-complete { opacity: 0.6; }
@@ -663,8 +637,9 @@ input[type="checkbox"] {
         const venueData = getVenueData(currentVenue);
         gcWinsDisplay.textContent = `Wins: ${venueData.battleCount}`;
         gcVenueText.textContent = venueDisplayMap[currentVenue] ?? currentVenue;
-        if (!gcContentBBCode.classList.contains("gc-hidden"))
+        if (!gcContentBBCode.classList.contains("gc-hidden")) {
             gcBBCodeScrollBox.textContent = formatBBCode();
+        }
         if (!gcContentOverview.classList.contains("gc-hidden")) {
             if (drops) patchOverview(drops);
             else buildOverview();
@@ -688,7 +663,7 @@ input[type="checkbox"] {
             e.preventDefault(); e.stopPropagation();
             const rect = panelEl.getBoundingClientRect();
             startX = e.clientX; startY = e.clientY;
-            startRight = window.innerWidth - rect.right; startTop = rect.top;
+            startRight = document.documentElement.clientWidth - rect.right; startTop = rect.top;
             document.addEventListener("mousemove", onDrag);
             document.addEventListener("mouseup", onRelease, { once: true });
             window.addEventListener("mouseleave", onRelease, { once: true });
@@ -696,13 +671,13 @@ input[type="checkbox"] {
         function onDrag(e) {
             const dx = startX - e.clientX, dy = e.clientY - startY;
             const rect = panelEl.getBoundingClientRect();
-            panelEl.style.top = `${Math.max(0, Math.min(startTop + dy, window.innerHeight - rect.height))}px`;
-            panelEl.style.right = `${Math.max(0, Math.min(startRight + dx, window.innerWidth - rect.width))}px`;
+            panelEl.style.top = `${Math.max(0, Math.min(startTop + dy, document.documentElement.clientWidth - rect.height))}px`;
+            panelEl.style.right = `${Math.max(0, Math.min(startRight + dx, document.documentElement.clientWidth - rect.width))}px`;
         }
         function onRelease() {
             const rect = panelEl.getBoundingClientRect();
             localStorage.setItem(elPositionTop, rect.top);
-            localStorage.setItem(elPositionRight, (window.innerWidth - rect.right));
+            localStorage.setItem(elPositionRight, (document.documentElement.clientWidth - rect.right));
             document.removeEventListener("mousemove", onDrag);
             window.removeEventListener("mouseleave", onRelease);
         }
@@ -741,8 +716,8 @@ input[type="checkbox"] {
     let gcRoot, gcMainToggle, gcMainPanel, gcVenueText, gcWinsDisplay;
     let gcTabBBCode, gcTabOverview, gcTabQuests;
     let gcContentBBCode, gcContentOverview, gcContentQuests;
-    let gcBBCodeLayoutSelect, gcBBCodeVenueSelect, gcBBCodeScrollBox;
-    let gcOverviewSearch, gcOverviewVenueSelect, gcOverviewScrollBox;
+    let gcBBCodeLayoutSelect, gcBBCodeScrollBox;
+    let gcOverviewSearch, gcOverviewScrollBox;
     let gcFooterCategorySelect, gcFooterSortSelect, tabMap, gcQuestNotif;
     let gcActiveQuestsBox, gcCompletedQuestsBox;
     let questEditMode = false, completedEditMode = false;
@@ -794,6 +769,7 @@ input[type="checkbox"] {
     function makeVenueFilterSelect(value, onChange) {
         const select = el("select");
         select.appendChild(el("option", { value: "All", text: "All Venues" }));
+        select.appendChild(el("option", { value: "current", text: `Current Venue` }));
         Object.entries(venueDisplayMap).forEach(([key, name]) =>
             select.appendChild(el("option", { value: key, text: name })));
         select.value = value;
@@ -878,9 +854,9 @@ input[type="checkbox"] {
     function fitColumns(sectionEl) {
         if (columnMode === "single") return;
         const entries = [...sectionEl.querySelectorAll(".gc-listEntry")];
-        entries.forEach(e => e.style.width = "max-content");
+        entries.forEach(e => { e.style.width = "max-content" });
         const maxWidth = entries.reduce((m, e) => Math.max(m, e.offsetWidth), 0);
-        entries.forEach(e => e.style.width = "");
+        entries.forEach(e => { e.style.width = "" });
         if (maxWidth > 0) sectionEl.style.setProperty("--gc-colWidth", `${maxWidth}px`);
     }
 
@@ -888,9 +864,9 @@ input[type="checkbox"] {
         if (columnMode === "single") return;
         containerEl.querySelectorAll(".gc-listSection").forEach(s => s.style.removeProperty("--gc-colWidth"));
         const entries = [...containerEl.querySelectorAll(".gc-listEntry")];
-        entries.forEach(e => e.style.width = "max-content");
+        entries.forEach(e => { e.style.width = "max-content" });
         const maxWidth = entries.reduce((m, e) => Math.max(m, e.offsetWidth), 0);
-        entries.forEach(e => e.style.width = "");
+        entries.forEach(e => { e.style.width = "" });
         if (maxWidth > 0) containerEl.style.setProperty("--gc-colWidth", `${maxWidth}px`);
     }
 
@@ -916,9 +892,9 @@ input[type="checkbox"] {
     function applyToggleStyle() {
         const handle = gcMainToggle.querySelector("div");
         gcMainToggle.innerHTML = "";
-        if (toggleStyle === "text") gcMainToggle.appendChild(document.createTextNode("Coliseum tracker"));
-        else if (toggleStyle === "icon-small") gcMainToggle.appendChild(createIcon("Gear", "width: 1.5em; height: 1.5em;"));
-        else if (toggleStyle === "icon-large") gcMainToggle.appendChild(createIcon("Gear", "width: 3em; height: 3em;"));
+        if (toggleStyle === "text") gcMainToggle.appendChild(document.createTextNode("Coliseum Tracker"));
+        else if (toggleStyle === "icon-small") gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em;"));
+        else if (toggleStyle === "icon-large") gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em;"));
         if (handle) gcMainToggle.appendChild(handle);
     }
 
@@ -932,7 +908,7 @@ input[type="checkbox"] {
         const tw = gcMainToggle.offsetWidth, th = gcMainToggle.offsetHeight;
         gcMainToggle.classList.add("gc-hidden");
         const top = isBottom ? panelRect.bottom - th : panelRect.top;
-        const right = isLeft ? window.innerWidth - panelRect.left - tw : window.innerWidth - panelRect.right;
+        const right = isLeft ? document.documentElement.clientWidth - panelRect.left - tw : document.documentElement.clientWidth - panelRect.right;
         gcMainToggle.style.top = `${top}px`;
         gcMainToggle.style.right = `${right}px`;
         localStorage.setItem("fr_coli_toggleTop", top);
@@ -946,8 +922,8 @@ input[type="checkbox"] {
         const panelHeight = lastPanelRect?.height ?? gcMainPanel.offsetHeight;
         gcMainPanel.style.top = isBottom ? `${toggleRect.bottom - panelHeight}px` : `${toggleRect.top}px`;
         gcMainPanel.style.right = isLeft
-            ? `${window.innerWidth - toggleRect.left - panelWidth}px`
-            : `${window.innerWidth - toggleRect.right}px`;
+            ? `${document.documentElement.clientWidth - toggleRect.left - panelWidth}px`
+            : `${document.documentElement.clientWidth - toggleRect.right}px`;
     }
 
     function buildListHeader(iconName, title, targetEl = null, variant = "", key = null, rightText = "") {
@@ -963,6 +939,10 @@ input[type="checkbox"] {
             header.addEventListener("click", () => {
                 const collapsed = targetEl.classList.toggle("gc-hidden");
                 arrow.classList.toggle("gc-collapsed", collapsed);
+                if (!collapsed) {
+                    targetEl.querySelectorAll(".gc-listSection").forEach(fitColumns);
+                    fitColumnsInContainer(targetEl);
+                }
                 if (key) { collapseStates[key] = collapsed; saveCollapseStates(); }
             });
         }
@@ -971,13 +951,10 @@ input[type="checkbox"] {
     }
 
     function patchOverview(drops) {
-        // If viewing a different single venue than where we just won, nothing changed visually
-        if (overviewVenue !== "All" && overviewVenue !== currentVenue) return;
+        const resolvedVenue = overviewVenue === "current" ? currentVenue : overviewVenue;
 
-        // All-venues view is complex to patch — full rebuild
-        if (overviewVenue === "All") { buildOverview(); return; }
-
-        // Amount-based sort means order may have changed — full rebuild
+        if (resolvedVenue !== "All" && resolvedVenue !== currentVenue) return;
+        if (resolvedVenue === "All") { buildOverview(); return; }
         if (sortMode.includes("amount")) { buildOverview(); return; }
 
         for (const [id] of drops) {
@@ -996,13 +973,13 @@ input[type="checkbox"] {
                 if (shouldShow) { buildOverview(); return; }
                 continue; // filtered out anyway, skip
             }
-            const totalAmount = getVenueData(currentVenue).loot[id] ?? 0;
+            const totalAmount = getVenueData(resolvedVenue).loot[id] ?? 0;
             amountEl.textContent = `x${totalAmount}`;
         }
 
         // Update wins display in place
         if (overviewWinsEl && (activeCategory === "All" || activeCategory === "Wins")) {
-            overviewWinsEl.textContent = `Wins: ${getVenueData(currentVenue).battleCount}`;
+            overviewWinsEl.textContent = `Wins: ${getVenueData(resolvedVenue).battleCount}`;
         }
     }
 
@@ -1011,7 +988,8 @@ input[type="checkbox"] {
         overviewWinsEl = null;
         gcOverviewScrollBox.innerHTML = "";
         const query = gcOverviewSearch?.value.trim().toLowerCase() ?? "";
-        const isAllVenues = overviewVenue === "All";
+        const resolvedVenue = overviewVenue === "current" ? currentVenue : overviewVenue;
+        const isAllVenues = resolvedVenue === "All";
         const isGrouped = venueGroupMode === "grouped";
 
         function buildWinsEntry(count) {
@@ -1073,10 +1051,10 @@ input[type="checkbox"] {
             const venueGroups = buildVenueGroupedModel(sortMode, activeCategory, highlightMode, festivalMode);
             for (const vg of venueGroups) renderGroup(vg.highlights, vg.festivals, vg.groups, vg.venue, vg.battleCount);
         } else {
-            const { highlights, festivals, groups } = buildLootModel(overviewVenue, sortMode, activeCategory, highlightMode, festivalMode);
-            const battleCount = overviewVenue === "All"
+            const { highlights, festivals, groups } = buildLootModel(resolvedVenue, sortMode, activeCategory, highlightMode, festivalMode);
+            const battleCount = resolvedVenue === "All"
                 ? Object.keys(venueDisplayMap).reduce((sum, k) => sum + getVenueData(k).battleCount, 0)
-                : getVenueData(overviewVenue).battleCount;
+                : getVenueData(resolvedVenue).battleCount;
             if (activeCategory === "All" || activeCategory === "Wins") {
                 gcOverviewScrollBox.appendChild(buildWinsEntry(battleCount));
             }
@@ -1105,8 +1083,7 @@ input[type="checkbox"] {
     function goalLabel(goal) {
         if (goal.type === "item") return `${goal.itemName}`;
         if (goal.type === "category") return `Any ${goal.category} drops`;
-        if (goal.type === "battles") return goal.venue === "All" ? "Battles in any venue" : `Battles in ${goal.venue}`;
-        if (goal.type === "enemy") return `Encounter ${goal.enemyName}`;
+        if (goal.type === "battles") return goal.venue === "All" ? "Battles in any venue" : `Battles in ${venueDisplayMap[goal.venue] ?? goal.venue}`;
         return "?";
     }
 
@@ -1114,7 +1091,7 @@ input[type="checkbox"] {
         if (panelHidden) {
             gcMainToggle.appendChild(gcQuestNotif);
             const rect = gcMainToggle.getBoundingClientRect();
-            const goLeft = rect.right > window.innerWidth / 2;
+            const goLeft = rect.right > document.documentElement.clientWidth / 2;
             const goUp = rect.bottom > window.innerHeight / 2;
             if (goUp) gcQuestNotif.style.marginTop = "-5em"; else gcQuestNotif.style.marginBottom = "-5em";
             if (goLeft) gcQuestNotif.style.marginLeft = "-5em"; else gcQuestNotif.style.marginRight = "-5em";
@@ -1144,7 +1121,7 @@ input[type="checkbox"] {
             // Valid encounter battle count (runs once per win, not per drop)
             quest.goals.forEach(goal => {
                 // Battle count goal
-                if (goal.type === "battles" && (goal.venue === "All" || goal.venue === venueDisplayMap[currentVenue])) {
+                if (goal.type === "battles" && (goal.venue === "All" || goal.venue === currentVenue)) {
                     goal.progress++; changed = true;
                 }
                 // Enemy encounter goal
@@ -1155,22 +1132,26 @@ input[type="checkbox"] {
             });
             if (questBattleCountEnabled) {
                 quest.goals.forEach(goal => {
-                    if (goal.progress >= goal.target) return; // Goal already complete
+                    if (goal.progress >= goal.target) return;
                     if (goal.type === "item") {
                         const item = itemIndex[String(goal.itemId)];
                         if (item) {
-                            const count = questBattleCountMode === "enemies"
-                                ? countValidEnemies(item)
-                                : (isValidEncounter(item) ? 1 : 0);
-                            if (count > 0) { goal.battleCount = (goal.battleCount || 0) + count; changed = true; }
+                            if (questBattleCountMode === "enemies") {
+                                const count = countValidEnemies(item);
+                                if (count > 0) { goal.encounterCount = (goal.encounterCount || 0) + count; changed = true; }
+                            } else {
+                                if (isValidEncounter(item)) { goal.battleCount = (goal.battleCount || 0) + 1; changed = true; }
+                            }
                         }
-                    }
-                    if (goal.type === "category") {
-                        if (goal.progress >= goal.target) return; // Goal already complete
-                        const count = questBattleCountMode === "enemies"
-                            ? countValidEnemiesForCategory(goal.category)
-                            : ((itemsByCategory[goal.category] ?? []).some(item => isValidEncounter(item)) ? 1 : 0);
-                        if (count > 0) { goal.battleCount = (goal.battleCount || 0) + count; changed = true; }
+                    } else if (goal.type === "category") {
+                        if (questBattleCountMode === "enemies") {
+                            const count = countValidEnemiesForCategory(goal.category);
+                            if (count > 0) { goal.encounterCount = (goal.encounterCount || 0) + count; changed = true; }
+                        } else {
+                            if ((itemsByCategory[goal.category] ?? []).some(item => isValidEncounter(item))) {
+                                goal.battleCount = (goal.battleCount || 0) + 1; changed = true;
+                            }
+                        }
                     }
                 });
             }
@@ -1217,9 +1198,10 @@ input[type="checkbox"] {
         function makeDelBtn() {
             const del = iconBtn("SmallX", "gc-delete");
             del.addEventListener("click", () => {
-                if (isCompleted) completedQuests = completedQuests.filter(q => q.id !== quest.id);
-                else activeQuests = activeQuests.filter(q => q.id !== quest.id);
-                isCompleted ? saveCompletedQuests() : saveActiveQuests();
+                activeQuests = activeQuests.filter(q => q.id !== quest.id);
+                completedQuests = completedQuests.filter(q => q.id !== quest.id);
+                saveActiveQuests();
+                saveCompletedQuests();
                 renderActiveQuests(); renderCompletedQuests();
             });
             return del;
@@ -1235,7 +1217,9 @@ input[type="checkbox"] {
                 row.appendChild(el("div", { text: goalLabel(quest.goals[0]), style: "flex: 1 1 auto;" }));
             }
             const goal0 = quest.goals[0];
-            const battleStr0 = questBattleCountEnabled && goal0.battleCount && (goal0.type === "item" || goal0.type === "category") ? ` (${goal0.battleCount} ${battleLabel})` : "";
+
+            const count = questBattleCountMode === "enemies" ? goal0.encounterCount : goal0.battleCount;
+            const battleStr0 = questBattleCountEnabled && count && (goal0.type === "item" || goal0.type === "category") ? ` (${count} ${battleLabel})` : "";
             row.appendChild(el("div", { text: progressStr + battleStr0, style: "flex: 0 1 auto; font-weight: normal;" }));
             if (editMode) row.appendChild(makeDelBtn());
             return row;
@@ -1274,8 +1258,9 @@ input[type="checkbox"] {
         quest.goals.forEach((goal, index) => {
             const row = el("div", { class: `gc-listEntry${goal.progress >= goal.target ? " gc-complete" : ""}` });
             row.appendChild(el("div", { text: goalLabel(goal) }));
-            const battleStr = questBattleCountEnabled && goal.battleCount && (goal.type === "item" || goal.type === "category")
-                ? ` (${goal.battleCount} ${battleLabel})` : "";
+
+            const count = questBattleCountMode === "enemies" ? goal.encounterCount : goal.battleCount;
+            const battleStr = questBattleCountEnabled && count && (goal.type === "item" || goal.type === "category") ? ` (${count} ${battleLabel})` : "";
             row.appendChild(el("div", { text: `${Math.min(goal.progress, goal.target)}/${goal.target}${battleStr}`, style: "flex: 0 1 auto; font-weight: normal;" }));
             if (editMode && !isCompleted) {
                 const del = iconBtn("SmallX", "gc-delete");
@@ -1344,7 +1329,7 @@ input[type="checkbox"] {
         const editBtn = label.appendChild(iconBtn("Edit"));
         const confirmBtn = label.appendChild(iconBtn("Check", "gc-hidden", "", "width: calc(var(--gc-fontSize) * 1.75)"));
         label.appendChild(el("div", { text: title }));
-        header.appendChild(makeCollapseButton([scrollBox]));
+        header.appendChild(makeCollapseButton([scrollBox], `questSection_${title}`));
         editBtn.addEventListener("click", () => {
             editBtn.classList.add("gc-hidden"); confirmBtn.classList.remove("gc-hidden"); onEnter();
         });
@@ -1417,7 +1402,7 @@ input[type="checkbox"] {
             updateUI();
         });
 
-        gcBBCodeVenueSelect = topRow.appendChild(makeVenueFilterSelect(bbcodeVenue, v => {
+        topRow.appendChild(makeVenueFilterSelect(bbcodeVenue, v => {
             bbcodeVenue = v; localStorage.setItem("fr_coli_bbcodeVenue", v); updateUI();
         }));
 
@@ -1447,7 +1432,7 @@ input[type="checkbox"] {
         const searchBtn = searchBar.appendChild(iconBtn("Search"));
         searchBtn.addEventListener("click", () => updateUI());
 
-        gcOverviewVenueSelect = topRow.appendChild(makeVenueFilterSelect(overviewVenue, v => {
+        topRow.appendChild(makeVenueFilterSelect(overviewVenue, v => {
             overviewVenue = v; localStorage.setItem("fr_coli_overviewVenue", v); updateUI();
         }));
 
@@ -1481,17 +1466,39 @@ input[type="checkbox"] {
         }
 
         function importQuests(file) {
+            importInput.value = ""; // reset so the same file can be selected again
             const reader = new FileReader();
             reader.onload = e => {
                 try {
                     const data = JSON.parse(e.target.result);
                     const incoming = Array.isArray(data) ? data : (data.activeQuests ?? []);
                     const valid = incoming.filter(q => q.id && Array.isArray(q.goals) && q.goals.length);
-                    if (!valid.length) { flashInvalid(importBtn); return; }
-                    const existingIds = new Set(activeQuests.map(q => q.id));
-                    activeQuests.push(...valid.filter(q => !existingIds.has(q.id)));
+                    if (!incoming.length) {
+                        flashInvalid(importBtn);
+                        alert("No quests found in this file.");
+                        return;
+                    }
+                    if (!valid.length) {
+                        flashInvalid(importBtn);
+                        alert("The file contained no valid quests. Make sure you're importing a quest export file.");
+                        return;
+                    }
+                    const existingIds = new Set([
+                        ...activeQuests.map(q => q.id),
+                        ...completedQuests.map(q => q.id)
+                    ]);
+                    const newQuests = valid.filter(q => !existingIds.has(q.id));
+                    if (!newQuests.length) {
+                        flashInvalid(importBtn);
+                        alert("All quests in this file have already been imported.");
+                        return;
+                    }
+                    activeQuests.push(...newQuests);
                     saveActiveQuests(); renderActiveQuests();
-                } catch { flashInvalid(importBtn); }
+                } catch {
+                    flashInvalid(importBtn);
+                    alert("Could not read this file. Make sure it is a valid JSON quest export.");
+                }
             };
             reader.readAsText(file);
         }
@@ -1556,7 +1563,8 @@ input[type="checkbox"] {
         const venueRow = el("div", { class: "gc-flex-row" });
         const venueSelect = venueRow.appendChild(el("select"));
         venueSelect.appendChild(el("option", { value: "All", text: "All Venues" }));
-        venues.forEach(v => venueSelect.appendChild(el("option", { value: v, text: v })));
+        Object.entries(venueDisplayMap).forEach(([key, name]) =>
+            venueSelect.appendChild(el("option", { value: key, text: name })));
         const venueAmount = venueRow.appendChild(el("input", { type: "number", placeholder: "Battles", class: "gc-input-narrow", min: "1" }));
         const addVenueBtn = venueRow.appendChild(iconBtn("Add"));
         addVenueBtn.addEventListener("click", () => {
@@ -1565,19 +1573,6 @@ input[type="checkbox"] {
             pendingGoals.push({ type: "battles", venue: venueSelect.value, target: amt, progress: 0 });
             venueAmount.value = ""; refreshGoalsBox();
         });
-
-        /*         const enemyRow = el("div", { class: "gc-flex-row" });
-                const enemyInput = enemyRow.appendChild(el("input", { type: "text", placeholder: "Enemy name" }));
-                const enemyAmount = enemyRow.appendChild(el("input", { type: "number", placeholder: "Battles", class: "gc-input-narrow", min: "1" }));
-                const addEnemyBtn = enemyRow.appendChild(iconBtn("Add"));
-                addEnemyBtn.addEventListener("click", () => {
-                    const name = enemyInput.value.trim();
-                    const amt = parseInt(enemyAmount.value);
-                    if (!name || !amt || amt < 1) { flashInvalid(...(!name ? [enemyInput] : []), ...(!amt || amt < 1 ? [enemyAmount] : [])); return; }
-                    pendingGoals.push({ type: "enemy", enemyName: name, target: amt, progress: 0 });
-                    enemyInput.value = ""; enemyAmount.value = "";
-                    refreshGoalsBox();
-                }); */
 
         const addQuestBtn = el("button", { class: "gc-buttonSmall", text: "Add Quest", style: "margin: 0 auto 0.41em auto;" });
         addQuestBtn.addEventListener("click", () => {
@@ -1588,7 +1583,7 @@ input[type="checkbox"] {
             refreshGoalsBox(); renderActiveQuests();
         });
 
-        newQuestHeader.appendChild(makeCollapseButton([questNameRow, itemRow, categoryRow, venueRow, /* enemyRow, */ newQuestGoalsBox, addQuestBtn]));
+        newQuestHeader.appendChild(makeCollapseButton([questNameRow, itemRow, categoryRow, venueRow, newQuestGoalsBox, addQuestBtn], "newQuest"));
 
         // ---- Completed Quests ----
         gcCompletedQuestsBox = el("div", { class: "gc-scrollBox gc-scrollBox--resize" });
@@ -1606,7 +1601,6 @@ input[type="checkbox"] {
         gcContentQuests.appendChild(itemRow);
         gcContentQuests.appendChild(categoryRow);
         gcContentQuests.appendChild(venueRow);
-        /*         gcContentQuests.appendChild(enemyRow); */
         gcContentQuests.appendChild(newQuestGoalsBox);
         gcContentQuests.appendChild(addQuestBtn);
         gcContentQuests.appendChild(completedHeader);
@@ -1634,23 +1628,64 @@ input[type="checkbox"] {
             activeCategory = gcFooterCategorySelect.value; localStorage.setItem("fr_coli_category", activeCategory); updateUI();
         });
 
-        const resetVenueBtn = el("button", { text: "Reset Venue" });
-        resetVenueBtn.addEventListener("click", () => {
-            if (!confirm(`Reset all loot data for ${currentVenue}?`)) return;
-            saveVenueData(currentVenue, { battleCount: 0, loot: {} }); updateUI();
-        });
+        const resetVenueBtn = el("button", { style: "background-color: var(--gc-button); color: var(--gc-button-text); padding: 0.83em; width: 100%; display: flex; justify-content: space-between;" });
+        resetVenueBtn.appendChild(el("div"));
+        resetVenueBtn.appendChild(el("div", { text: "Reset Venue" }));
+        const resetArrow = resetVenueBtn.appendChild(createIcon("CollapseExpand", "fill: var(--gc-button-text); padding-left: 0.83em;"));
+        resetArrow.classList.add("gc-arrow", "gc-collapsed");
+        const resetVenueDropdown = el("div", { class: "gc-hidden", style: "position: fixed; background-color: var(--gc-main-accent); border-radius: 5px; z-index: 10; height: 12em; overflow-y: auto; resize: vertical;" });
 
-        const resetAllBtn = el("button", { text: "Reset All Venues" });
-        resetAllBtn.addEventListener("click", () => {
+        // Add All Venues option at top
+        const allVenuesBtn = el("button", { text: "All Venues", style: "width: 100%; border-radius: 0; border-bottom: 1px solid color-mix(in srgb, var(--gc-button-text) 15%, transparent); font-weight: normal" });
+
+        allVenuesBtn.addEventListener("click", () => {
+            resetVenueDropdown.classList.add("gc-hidden");
             if (!confirm("Reset loot data for ALL venues? This cannot be undone.")) return;
-            Object.keys(venueDisplayMap).forEach(key => saveVenueData(key, { battleCount: 0, loot: {} })); updateUI();
+            Object.keys(venueDisplayMap).forEach(key => saveVenueData(key, { battleCount: 0, loot: {} }));
+            updateUI();
+        });
+        resetVenueDropdown.appendChild(allVenuesBtn);
+
+        // Add each venue
+        Object.entries(venueDisplayMap).forEach(([key, name]) => {
+            const btn = el("button", { text: name, style: "width: 100%; border-radius: 0; border-bottom: 1px solid color-mix(in srgb, var(--gc-button-text) 15%, transparent); font-weight: normal" });
+            btn.addEventListener("click", () => {
+                resetVenueDropdown.classList.add("gc-hidden");
+                if (!confirm(`Reset all loot data for ${name}?`)) return;
+                saveVenueData(key, { battleCount: 0, loot: {} });
+                updateUI();
+            });
+            resetVenueDropdown.appendChild(btn);
         });
 
-        const collapseBtn = footer.appendChild(makeCollapseButton([gcFooterSortSelect, gcFooterCategorySelect, resetVenueBtn, resetAllBtn], "footer"));
+        resetVenueBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isHidden = resetVenueDropdown.classList.contains("gc-hidden");
+            resetVenueDropdown.classList.toggle("gc-hidden");
+            resetArrow.classList.toggle("gc-collapsed", !isHidden);
+            if (isHidden) {
+                const rect = resetVenueBtn.getBoundingClientRect();
+                resetVenueDropdown.style.top = `${rect.bottom}px`;
+                resetVenueDropdown.style.left = `${rect.left}px`;
+                resetVenueDropdown.style.width = `${rect.width}px`;
+            }
+        });
+
+
+        document.addEventListener("mousedown", (e) => {
+            if (resetVenueDropdown.contains(e.target) || resetVenueBtn.contains(e.target)) return;
+            resetVenueDropdown.classList.add("gc-hidden");
+            resetArrow.classList.add("gc-collapsed");
+        });
+
+        const resetVenueWrapper = el("div", { style: "position: relative; grid-column: 1 / 3;" });
+        resetVenueWrapper.appendChild(resetVenueBtn);
+        resetVenueWrapper.appendChild(resetVenueDropdown);
+
+        const collapseBtn = footer.appendChild(makeCollapseButton([gcFooterSortSelect, gcFooterCategorySelect, resetVenueWrapper], "footer"));
         collapseBtn.style.gridColumn = "3";
         collapseBtn.style.gridRow = "1";
-        footer.appendChild(resetVenueBtn);
-        footer.appendChild(resetAllBtn);
+        footer.appendChild(resetVenueWrapper);
         return footer;
     }
 
@@ -1708,6 +1743,11 @@ input[type="checkbox"] {
             v => { questBattleCountMode = v; localStorage.setItem("fr_coli_questBattleCountMode", v); updateUI(); },
             "Whether the battle count tracks whole battles (1 per fight) or individual valid enemies per fight");
 
+        makeSettingSelect(displayCol, "Quest Notifications:",
+            [["on", "On"], ["off", "Off"]], questNotifEnabled ? "on" : "off",
+            v => { questNotifEnabled = v === "on"; localStorage.setItem("fr_coli_questNotif", questNotifEnabled); },
+            "Whether to show a notification when a quest is completed");
+
         displayCol.appendChild(dividerH());
 
         displayCol.appendChild(el("label", { text: "Font size:" }));
@@ -1735,6 +1775,8 @@ input[type="checkbox"] {
             v => { iconMode = v; localStorage.setItem("fr_coli_iconMode", v); applyIconMode(); },
             "Where to show category icons — in headers, entries, or both");
 
+        displayCol.appendChild(dividerH());
+
         makeSettingSelect(displayCol, "Toggle Position:",
             [["top-right", "Top Right"], ["top-left", "Top Left"], ["bottom-right", "Bottom Right"], ["bottom-left", "Bottom Left"]], toggleCorner,
             v => { toggleCorner = v; localStorage.setItem("fr_coli_toggleCorner", v); },
@@ -1745,10 +1787,6 @@ input[type="checkbox"] {
             v => { toggleStyle = v; localStorage.setItem("fr_coli_toggleStyle", v); applyToggleStyle(); },
             "The appearance of the collapse toggle button");
 
-        makeSettingSelect(displayCol, "Quest Notifications:",
-            [["on", "On"], ["off", "Off"]], questNotifEnabled ? "on" : "off",
-            v => { questNotifEnabled = v === "on"; localStorage.setItem("fr_coli_questNotif", questNotifEnabled); },
-            "Whether to show a notification when a quest is completed");
 
         displayCol.appendChild(dividerH());
 
@@ -1867,12 +1905,8 @@ input[type="checkbox"] {
         addBtn.addEventListener("click", () => {
             const query = addInput.value.trim();
             if (!query) return;
-            let matchId = itemIndex[query] ? query : null;
-            if (!matchId) {
-                const lower = query.toLowerCase();
-                const found = Object.entries(itemIndex).find(([, item]) => item.name?.toLowerCase() === lower);
-                if (found) matchId = found[0];
-            }
+            const lower = query.toLowerCase();
+            const matchId = itemIndex[query] ? query : (itemNameMap[lower] ?? null);
             if (!matchId) { alert(`Could not find an item matching "${query}". Try using the exact name or item ID.`); return; }
             if (workingHighlightPreset.includes(matchId)) { alert(`"${itemIndex[matchId]?.name ?? matchId}" is already in the preset.`); return; }
             workingHighlightPreset.push(matchId);
@@ -1931,7 +1965,7 @@ input[type="checkbox"] {
                         workingHighlightPreset = [...savedHighlightPresets[activeHighlightPresetName]];
                         highlightPreset = [...workingHighlightPreset];
                         highlightSet.clear(); highlightPreset.forEach(id => highlightSet.add(id));
-                        highlightPresetManager._refresh(); rebuildHighlightDetail(); updateUI();
+                        highlightPresetManager._setActive(activeHighlightPresetName); rebuildHighlightDetail(); updateUI();
                         alert(`Preset "${name.trim()}" imported successfully.`);
                     } catch (err) {
                         alert("Invalid preset file — expected a JSON array of item IDs.");
@@ -2084,6 +2118,7 @@ input[type="checkbox"] {
         saveAsBtn.addEventListener("click", () => {
             const name = prompt("Enter preset name:");
             if (!name?.trim()) return;
+            if (savedPresets[name.trim()] && !confirm(`"${name.trim()}" already exists. Overwrite?`)) return;
             save(name.trim()); leaveEditMode(); refreshSelect();
         });
 
@@ -2111,6 +2146,10 @@ input[type="checkbox"] {
         });
 
         container._refresh = refreshSelect;
+        container._setActive = (name) => {
+            activePresetName = name;
+            refreshSelect();
+        };
         return container;
     }
 
@@ -2133,9 +2172,9 @@ input[type="checkbox"] {
         gcSettingsPanel.appendChild(buildHighlightsSettingsContent());
         gcSettingsPanel.appendChild(buildSettingsFooter());
 
-        gcMainToggle = el("button", { text: "Coliseum tracker", style: `position: fixed; top: ${localStorage.getItem("fr_coli_toggleTop") ?? localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_toggleRight") ?? localStorage.getItem("fr_coli_posRight") ?? 10}px` });
+        gcMainToggle = el("button", { text: "Coliseum tracker", style: `position: fixed; top: ${localStorage.getItem("fr_coli_toggleTop") ?? localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_toggleRight") ?? localStorage.getItem("fr_coli_posRight") ?? 10}px;` });
         panelResizeObserver.observe(gcMainPanel);
-        const toggleHandle = gcMainToggle.appendChild(el("div", { style: "position: absolute; top: 0; right: 0; width: 2em; height: 2em; cursor: grab;" }));
+        const toggleHandle = gcMainToggle.appendChild(el("div", { style: "position: absolute; top: 0; right: 0; width: 1.5em; height: 1.5em; cursor: grab;" }));
 
         gcMainPanel.classList.toggle("gc-hidden", panelHidden);
         gcMainToggle.classList.toggle("gc-hidden", !panelHidden);
