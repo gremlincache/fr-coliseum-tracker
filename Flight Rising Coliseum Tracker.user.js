@@ -6,9 +6,9 @@
 // @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
 // @run-at       document-start
-// @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/main/itemIndex.js
-// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
-// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/main/Flight%20Rising%20Coliseum%20Tracker.user.js
+// @require      https://raw.githubusercontent.com/gremlincache/fr-coliseum-tracker/refs/heads/v1.3.2-fallback/itemIndex.js
+// @updateURL    https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/v1.3.2-fallback/Flight%20Rising%20Coliseum%20Tracker.user.js
+// @downloadURL  https://github.com/gremlincache/fr-coliseum-tracker/raw/refs/heads/v1.3.2-fallback/Flight%20Rising%20Coliseum%20Tracker.user.js
 // ==/UserScript==
 
 (function() {
