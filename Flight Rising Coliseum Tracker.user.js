@@ -1090,6 +1090,7 @@ input[type="checkbox"] {
         if (goal.type === "item") return `${goal.itemName}`;
         if (goal.type === "category") return `Any ${goal.category} drops`;
         if (goal.type === "battles") return goal.venue === "All" ? "Battles in any venue" : `Battles in ${venueDisplayMap[goal.venue] ?? goal.venue}`;
+        if (goal.type === "enemy") return `Encounter ${goal.enemyName}`;
         return "?";
     }
 
@@ -1580,6 +1581,19 @@ input[type="checkbox"] {
             venueAmount.value = ""; refreshGoalsBox();
         });
 
+        const enemyRow = el("div", { class: "gc-flex-row" });
+        const enemyInput = enemyRow.appendChild(el("input", { type: "text", placeholder: "Enemy name (exact)" }));
+        const enemyAmount = enemyRow.appendChild(el("input", { type: "number", placeholder: "Amount", class: "gc-input-narrow", min: "1" }));
+        const addEnemyBtn = enemyRow.appendChild(iconBtn("Add"));
+        addEnemyBtn.addEventListener("click", () => {
+            const name = enemyInput.value.trim();
+            const amt = parseInt(enemyAmount.value);
+            if (!name || !amt || amt < 1) { flashInvalid(...(!name ? [enemyInput] : []), ...(!amt || amt < 1 ? [enemyAmount] : [])); return; }
+            pendingGoals.push({ type: "enemy", enemyName: name, target: amt, progress: 0 });
+            enemyInput.value = ""; enemyAmount.value = "";
+            refreshGoalsBox();
+        });
+
         const addQuestBtn = el("button", { class: "gc-buttonSmall", text: "Add Quest", style: "margin: 0 auto 0.41em auto;" });
         addQuestBtn.addEventListener("click", () => {
             if (!pendingGoals.length) { flashInvalid(newQuestGoalsBox); return; }
@@ -1589,7 +1603,7 @@ input[type="checkbox"] {
             refreshGoalsBox(); renderActiveQuests();
         });
 
-        newQuestHeader.appendChild(makeCollapseButton([questNameRow, itemRow, categoryRow, venueRow, newQuestGoalsBox, addQuestBtn], "newQuest"));
+        newQuestHeader.appendChild(makeCollapseButton([questNameRow, itemRow, categoryRow, venueRow, enemyRow, newQuestGoalsBox, addQuestBtn], "newQuest"));
 
         // ---- Completed Quests ----
         gcCompletedQuestsBox = el("div", { class: "gc-scrollBox gc-scrollBox--resize" });
@@ -1607,6 +1621,7 @@ input[type="checkbox"] {
         gcContentQuests.appendChild(itemRow);
         gcContentQuests.appendChild(categoryRow);
         gcContentQuests.appendChild(venueRow);
+        gcContentQuests.appendChild(enemyRow);
         gcContentQuests.appendChild(newQuestGoalsBox);
         gcContentQuests.appendChild(addQuestBtn);
         gcContentQuests.appendChild(completedHeader);
