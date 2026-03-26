@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flight Rising Coliseum Tracker
 // @namespace    https://tampermonkey.net/
-// @version      2.0.1
+// @version      2.0.2
 // @description  Tool that tracks loot and battles fought in the Coliseum, with BBCode formatter, quests tracking, categories and highlights.
 // @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
@@ -1132,10 +1132,10 @@ input[type="checkbox"] {
                     goal.progress++; changed = true;
                 }
                 // Enemy encounter goal
-                if (goal.type === "enemy") {
-                    const encountered = currentEnemies.some(e => e.name === goal.enemyName);
-                    if (encountered) { goal.progress++; changed = true; }
-                }
+            if (goal.type === "enemy") {
+                const count = currentEnemies.filter(e => e.name.toLowerCase() === goal.enemyName.toLowerCase()).length;
+                if (count > 0) { goal.progress += count; changed = true; }
+            }
             });
             if (questBattleCountEnabled) {
                 quest.goals.forEach(goal => {
@@ -1583,6 +1583,9 @@ input[type="checkbox"] {
 
         const enemyRow = el("div", { class: "gc-flex-row" });
         const enemyInput = enemyRow.appendChild(el("input", { type: "text", placeholder: "Enemy name (exact)" }));
+        enemyInput.addEventListener("change", () => {
+        enemyInput.value = enemyInput.value.trim().replace(/\b\w/g, c => c.toUpperCase());
+        });
         const enemyAmount = enemyRow.appendChild(el("input", { type: "number", placeholder: "Amount", class: "gc-input-narrow", min: "1" }));
         const addEnemyBtn = enemyRow.appendChild(iconBtn("Add"));
         addEnemyBtn.addEventListener("click", () => {
