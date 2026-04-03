@@ -2180,7 +2180,7 @@ input[type="checkbox"] {
     // --- BUILD UI ---
     function buildUI() {
         gcMainPanel = el("div", {
-            class: "gc-panel", style: `top: ${localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_posRight") ?? 10}px; ${localStorage.getItem("fr_coli_panelWidth") ? `width: ${localStorage.getItem("fr_coli_panelWidth")}px;` : ""} ${localStorage.getItem("fr_coli_panelHeight") ? `height: ${localStorage.getItem("fr_coli_panelHeight")}px;` : ""}`
+            class: "gc-panel", style: `top: ${localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_posRight") ?? 10}px; width: ${localStorage.getItem("fr_coli_panelWidth") ?? 300}px; height: ${localStorage.getItem("fr_coli_panelHeight") ?? 400}px;`
         });
         gcMainPanel.appendChild(buildMainHeader());
         gcMainPanel.appendChild(buildMainTabs());
