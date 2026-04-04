@@ -103,6 +103,8 @@
     let completedQuests = JSON.parse(localStorage.getItem("fr_coli_completedQuests") ?? "[]");
     let savedFont = localStorage.getItem("fr_coli_fontFamily") ?? "Verdana, Geneva, sans-serif";
     let questNotifEnabled = localStorage.getItem("fr_coli_questNotif") !== "false";
+    let toggleContrast = localStorage.getItem("fr_coli_toggleContrast") !== "false";
+
 
     // --- Theme definitions
     const defaultThemes = {
@@ -664,9 +666,10 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
     }
 
     function makeDraggable(handleEl, panelEl, elPositionTop, elPositionRight) {
-        let startX, startY, startRight, startTop;
+        let startX, startY, startRight, startTop, didDrag = false;
         handleEl.addEventListener("mousedown", (e) => {
             e.preventDefault(); e.stopPropagation();
+            didDrag = false;
             const rect = panelEl.getBoundingClientRect();
             startX = e.clientX; startY = e.clientY;
             startRight = document.documentElement.clientWidth - rect.right; startTop = rect.top;
@@ -675,6 +678,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             window.addEventListener("mouseleave", onRelease, { once: true });
         });
         function onDrag(e) {
+            didDrag = true;
             const dx = startX - e.clientX, dy = e.clientY - startY;
             const rect = panelEl.getBoundingClientRect();
             panelEl.style.top = `${Math.max(0, Math.min(startTop + dy, document.documentElement.clientWidth - rect.height))}px`;
@@ -683,7 +687,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         function onRelease() {
             const rect = panelEl.getBoundingClientRect();
             const top = Math.round(rect.top);
-            const right = Math.round(window.innerWidth - rect.right);
+            const right = Math.round(document.documentElement.clientWidth - rect.right);
             localStorage.setItem(elPositionTop, top);
             localStorage.setItem(elPositionRight, right);
             // Update position inputs if they exist
@@ -696,6 +700,9 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             }
             document.removeEventListener("mousemove", onDrag);
             window.removeEventListener("mouseleave", onRelease);
+            // Prevent the mouseup from triggering a click
+            const absorbClick = (e) => { e.stopPropagation(); };
+            handleEl.addEventListener("click", absorbClick, { once: true, capture: true });
         }
     }
 
@@ -720,7 +727,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 updateUI();
             }
         }, 200);
-        // timeout if the enemyPoll for some reason doesn't get populated when a battle starts to ensure it doesn't keep running 
+        // timeout if the enemyPoll for some reason doesn't get populated when a battle starts to ensure it doesn't keep running
         setTimeout(() => clearInterval(enemyPoll), 30000);
 
         injectGCStyles(); buildUI(); updateUI(); applyColumnMode();
@@ -935,9 +942,26 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
     function applyToggleStyle() {
         const handle = gcMainToggle.querySelector("div");
         gcMainToggle.innerHTML = "";
+
         if (toggleStyle === "text") gcMainToggle.appendChild(document.createTextNode("Coliseum Tracker"));
-        else if (toggleStyle === "icon-small") gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em;"));
-        else if (toggleStyle === "icon-large") gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em;"));
+        else if (toggleStyle === "icon-small") {
+                if (toggleContrast) {
+                    gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em; padding: 0.42em; fill: var(--gc-button-text)"))
+                    gcMainToggle.style.backgroundColor = "var(--gc-button)";
+                }
+                else {
+                    gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em;"))
+                    gcMainToggle.style.backgroundColor = "";
+                }
+        }
+        else if (toggleStyle === "icon-large") {
+            if (toggleContrast) {
+                gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em; padding: 0.42em; fill: var(--gc-button-text)"));
+                gcMainToggle.style.backgroundColor = "var(--gc-button)";
+            }
+            else {gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em;"));
+                            gcMainToggle.style.backgroundColor = ""; }
+        }
         if (handle) gcMainToggle.appendChild(handle);
     }
 
@@ -1799,14 +1823,23 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             v => { toggleStyle = v; localStorage.setItem("fr_coli_toggleStyle", v); applyToggleStyle(); },
             "The appearance of the collapse toggle button");
 
+        panelCol.appendChild(el("label", { text: "Toggle Icon Contrast", title: "Adds background to the toggle when set to icon" }));
+        const contrastCheckbox = panelCol.appendChild(el("input", { type: "checkbox" }));
+        contrastCheckbox.checked = toggleContrast;
+        contrastCheckbox.addEventListener("change", () => {
+            toggleContrast = contrastCheckbox.checked;
+            localStorage.setItem("fr_coli_toggleContrast", toggleContrast);
+            applyToggleStyle();
+            });
+
         panelCol.appendChild(dividerH());
 
         panelCol.appendChild(el("span", { text: "Settings below are backups if the resize and drag handles do not work on your device. Please use caution since large values may shift the windows off-screen", class: "gc-span", style: "text-align: center; font-size: calc(var(--gc-fontSize) * 0.8)"}));
 
         panelCol.appendChild(el("label", { text: "Main Panel", class: "gc-span", style: "font-weight: bold; text-align: center;", title: "Set size and position for the main panel as a backup if the resize and drag handles do not work on your device" }));
 
-        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null, 
-            v => { const val = parseInt(v); if (!val) return; 
+        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null,
+            v => { const val = parseInt(v); if (!val) return;
                 gcMainPanel.style.width = `${val}px`;
                 requestAnimationFrame(() => {
                 const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
@@ -1814,8 +1847,8 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 localStorage.setItem("fr_coli_panelWidth", actual);
             }); }, "Set main panel width in pixels");
 
-        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null, 
-            v => { const val = parseInt(v); if (!val) return; 
+        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null,
+            v => { const val = parseInt(v); if (!val) return;
                 gcMainPanel.style.height = `${val}px`;
                 requestAnimationFrame(() => {
                     const actual = Math.round(gcMainPanel.getBoundingClientRect().height);
@@ -1851,7 +1884,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 localStorage.setItem("fr_coli_settingsPanelWidth", actual);
             });
         }, "Set setting panel width in pixels")
-        
+
         settingsHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_settingsPanelHeight") ?? 500, null, null,
         v => {
             const val = parseInt(v);
@@ -1877,7 +1910,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             gcSettingsPanel.style.right = `${val}px`;
             localStorage.setItem("fr_coli_settingsPosRight", val);
         }, "Set position of settings panel from the right edge of the browser in pixels");
-        
+
         gcSettingsContentPanel.appendChild(panelCol);
         return gcSettingsContentPanel;
     }
@@ -1887,7 +1920,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         gcSettingsContentVisual = el("div", { class: "gc-mainContent gc-hidden" });
         const displayCol = el("div", { class: "gc-flex-col" });
 
-        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40", 
+        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40",
             v => { fontSize = parseInt(v); localStorage.setItem("fr_coli_fontSize", v); gcRoot.style.setProperty("--gc-fontSize", `${v}px`);
             applyColumnMode(); }, "Set font size - affects panel size");
 
@@ -2330,7 +2363,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         gcSettingsPanel.appendChild(buildPanelSettingsContent());
         gcSettingsPanel.appendChild(buildSettingsFooter());
 
-        gcMainToggle = el("button", { text: "Coliseum tracker", style: `position: fixed; top: ${localStorage.getItem("fr_coli_toggleTop") ?? localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_toggleRight") ?? localStorage.getItem("fr_coli_posRight") ?? 10}px;` });
+        gcMainToggle = el("button", { style: `position: fixed; top: ${localStorage.getItem("fr_coli_toggleTop") ?? localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_toggleRight") ?? localStorage.getItem("fr_coli_posRight") ?? 10}px;` });
         panelResizeObserver.observe(gcMainPanel);
         settingsResizeObserver.observe(gcSettingsPanel);
         const toggleHandle = gcMainToggle.appendChild(el("div", { style: "position: absolute; top: 0; right: 0; width: 1.5em; height: 1.5em; cursor: grab;" }));
@@ -2359,7 +2392,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         themePresetManager._refresh();
         highlightPresetManager._refresh();
         applyTheme(activeThemeName);
-        
+
         applyIconMode();
         applyToggleStyle();
         gcRoot.style.setProperty("--gc-FontFamily", savedFont);
