@@ -104,7 +104,7 @@
     let savedFont = localStorage.getItem("fr_coli_fontFamily") ?? "Verdana, Geneva, sans-serif";
     let questNotifEnabled = localStorage.getItem("fr_coli_questNotif") !== "false";
     let toggleContrast = localStorage.getItem("fr_coli_toggleContrast") === "true";
-
+    let paddingMode = localStorage.getItem("fr_coli_paddingPreset") ?? "normal";
 
     // --- Theme definitions
     const defaultThemes = {
@@ -126,6 +126,12 @@
             "--gc-overviewHeader": "#f2f2f2", "--gc-overviewHeader-accent": "#454545",
             "--gc-venueHeader": "#454545", "--gc-venueHeader-accent": "#f2f2f2", "--gc-entryIcons": "#949494",
         }
+    };
+
+    const paddingPresets = {
+        normal: { "--gc-pad-sm": "0.42em", "--gc-pad-md": "0.83em", "--gc-pad-lg": "1em" },
+        compact: { "--gc-pad-sm": "0.2em", "--gc-pad-md": "0.41em", "--gc-pad-lg": "0.6em" },
+        comfortable: { "--gc-pad-sm": "0.6em", "--gc-pad-md": "1em", "--gc-pad-lg": "1.4em" }
     };
 
     // Each entry: [label, css variable name]
@@ -501,42 +507,45 @@
     --gc-FontFamily: Verdana, Geneva, sans-serif; --gc-fontSize: 12px; --gc-colWidth: auto;
     font-size: var(--gc-fontSize); font-family: var(--gc-FontFamily);
     line-height: 1.25em; color: var(--gc-main-text); overflow: visible;
+    --gc-pad-sm: 0.42em;
+    --gc-pad-md: 0.83em;
+    --gc-pad-lg: 1em;
 }
 .gc-singleCol .gc-listSection { column-width: 100% !important; column-count: 1; }
 button {
     font-size: inherit; display: flex; justify-content: center; cursor: pointer; align-items: center;
-    border-style: none; padding-inline: 0px; padding-block: 0px; padding: 0.83em; border-radius: 5px;
+    border-style: none; padding-inline: 0px; padding-block: 0px; padding: var(--gc-pad-md); border-radius: 5px;
     line-height: 1em; font-family: inherit; font-weight: bold;
     background-color: var(--gc-button); color: var(--gc-button-text);
     &:has(svg) { background-color: transparent; padding: 0; }
 }
 .gc-root label { float: none; width: unset;}
 .gc-root div { cursor: default; }
-.gc-buttonSmall { padding: 0.42em 0.83em 0.42em 0.83em; flex: 0 0 auto; align-self: stretch; }
+.gc-buttonSmall { padding: var(--gc-pad-sm) var(--gc-pad-md) var(--gc-pad-sm) var(--gc-pad-md); flex: 0 0 auto; align-self: stretch; }
 .gc-editCancel { background-color: var(--gc-main-accent); color: var(--gc-main-text); margin-left: auto; }
 svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 1.25); fill: var(--gc-icons); }
 .gc-delete {
     background-color: var(--gc-deleteColor); color: var(--gc-deleteColor-accent); fill: var(--gc-deleteColor);
     &:has(svg) { background-color: transparent; padding: 0; margin-left: auto; & svg { fill: var(--gc-deleteColor); } }
 }
-.gc-root select, .gc-root input[type="number"] {
+select, input[type="number"] {
     font-size: inherit; cursor: pointer; flex: 1 1 0; border: 1px solid var(--gc-border); border-radius: 4px;
-    padding: 0.41em; background-color: var(--gc-main-accent); font-family: inherit; line-height: 1em; color: inherit;
+    padding: var(--gc-pad-sm); background-color: var(--gc-main-accent); font-family: inherit; line-height: 1em; color: inherit;
 }
-.gc-root input[type="number"] { cursor: text; }
-.gc-root input[type="color"] {
+input[type="number"] { cursor: text; min-width: 0;}
+input[type="color"] {
     cursor: pointer; inline-size: var(--gc-fontSize); block-size: var(--gc-fontSize); border: none;
     border-radius: 2px; padding: 0px;
     &::-webkit-color-swatch-wrapper { padding: 0px; }
     &::-webkit-color-swatch { border: none; }
 }
-.gc-root input[type="text"] {
+input[type="text"] {
     font-size: inherit; cursor: text; flex: 1 1 0; background-color: var(--gc-main-accent);
     align-items: center; border-style: none; font-family: inherit; line-height: 1em; border-radius: 4px;
-    width: 0; padding: 0.42em 0.83em 0.42em 0.83em; color: inherit;
+    width: 0; padding: var(--gc-pad-sm) var(--gc-pad-md) var(--gc-pad-sm) var(--gc-pad-md); color: inherit;
     &::placeholder { color: inherit; opacity: 0.5; }
 }
-.gc-root input[type="checkbox"] {
+input[type="checkbox"] {
     appearance: none; width: 1em; height: 1em; border: 1px solid var(--gc-border); border-radius: 2px;
     background-color: var(--gc-main-accent); cursor: pointer; flex: 0 0 auto;
     &:checked { background-color: var(--gc-button); border-color: var(--gc-button); }
@@ -549,68 +558,69 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
     display: flex; flex-direction: column; z-index: 3;
 }
 .gc-header {
-    background-color: var(--gc-frame); padding: 1em; display: flex; align-items: center;
+    background-color: var(--gc-frame); padding: var(--gc-pad-lg); display: flex; align-items: center;
     gap: 1em; line-height: 1.5em; color: var(--gc-header-text);
-    & > button:first-child { align-self: stretch; margin: -1em -0.83em -1em -1em; padding: 1em 0.83em 1em 1em; }
+    & > button:first-child { align-self: stretch; margin: calc(var(--gc-pad-lg) * -1) calc(var(--gc-pad-md) * -1) calc(var(--gc-pad-lg) * -1) calc(var(--gc-pad-lg) * -1);
+    padding: var(--gc-pad-lg) var(--gc-pad-md) var(--gc-pad-lg) var(--gc-pad-lg); }
     & > button > svg { width: calc(var(--gc-fontSize) + 0.5em); height: calc(var(--gc-fontSize) + 0.5em); }
 }
 .gc-headerText { font-size: 1.5em; white-space: nowrap; }
 .gc-tabs {
     display: flex; background-color: var(--gc-main-accent);
     & button {
-        background-color: var(--gc-main-accent); color: var(--gc-main-text); flex: 1 1 auto; padding: 1em;
+        background-color: var(--gc-main-accent); color: var(--gc-main-text); flex: 1 1 auto; padding: var(--gc-pad-lg);
         border-top: 2px solid transparent; border-bottom: 2px solid transparent; border-radius: 0px;
         &.gc-active { background-color: var(--gc-main); border-bottom: 2px solid var(--gc-main-text); }
     }
 }
 .gc-searchbar {
     flex: 1 1 0; display: flex; border: 1px solid var(--gc-border); border-radius: 4em;
-    color: var(--gc-main-text); background-color: var(--gc-main-accent); padding: 0.42em 0.83em 0.42em 0.83em;
+    color: var(--gc-main-text); background-color: var(--gc-main-accent); padding: var(--gc-pad-sm) var(--gc-pad-md) var(--gc-pad-sm) var(--gc-pad-md);
     & input { background-color: inherit; padding: 0; padding-left: 2px; border-radius: 0px; min-width: 5em; }
     & > button > svg { fill: var(--gc-main-text); }
 }
 .gc-mainContent {
-    flex: 1 1 0; display: flex; flex-direction: column; gap: 0.83em; padding: 0.83em;
+    flex: 1 1 0; display: flex; flex-direction: column; gap: var(--gc-pad-md); padding: var(--gc-pad-md);
     border-top: 1px solid var(--gc-border); overflow: auto;
 }
 .gc-footer {
     display: grid; align-items: center; justify-content: right; grid-template-columns: 1fr 1fr auto;
-    background-color: var(--gc-frame); padding: 0.83em; gap: 0.83em; border-top: 1px solid var(--gc-border);
+    background-color: var(--gc-frame); padding: var(--gc-pad-md); gap: var(--gc-pad-md); border-top: 1px solid var(--gc-border);
 }
 .gc-divider-v { background-color: var(--gc-icons); width: 1px; align-self: stretch; min-height: 2em; padding: 0px; }
 .gc-divider-h { height: 1px; background-color: var(--gc-contentDivider); grid-column: 1 / -1; flex: 0 0 auto; }
 .gc-scrollBox {
     flex: 1 1 auto; display: flex; flex-flow: column; background-color: var(--gc-main-accent);
-    padding: 0.83em; border-radius: 4px; border: 1px solid var(--gc-border); overflow: auto; min-width: 0; min-height: 0;
+    padding: var(--gc-pad-md); border-radius: 4px; border: 1px solid var(--gc-border); overflow: auto; min-width: 0; min-height: 0;
 }
 .gc-scrollBox--resize { flex: 0 0 auto; resize: vertical; min-height: 3em; }
-.gc-flex-row, .gc-flex-row-sb { display: flex; gap: 0.83em; justify-content: flex-start; align-items: center; }
+.gc-flex-row, .gc-flex-row-sb { display: flex; gap: var(--gc-pad-md); justify-content: flex-start; align-items: center; }
 .gc-flex-row-sb {
-    justify-content: space-between; padding: 0em 0.41em 0em 0.41em;
+    justify-content: space-between; padding: 0 var(--gc-pad-sm) 0v ar(--gc-pad-sm);
     div:last-child { margin-left: auto; }
 }
 .gc-listHeader {
     gap: 0em; color: var(--gc-overviewHeader-accent); background-color: var(--gc-overviewHeader);
-    width: 100%; margin-bottom: 0.42em;
+    width: 100%; margin-bottom: var(--gc-pad-sm);
     svg { fill: var(--gc-overviewHeader-accent); }
-    svg:last-child { padding-right: 0.2em; padding-left: 0.42em; }
-    div { flex: 1 1 auto; padding-left: 0.41em; text-align: left; line-height: 2em; }
+    svg:last-child { padding-right: 0.2em; padding-left: var(--gc-pad-sm); }
+    div { flex: 1 1 auto; padding-left: var(--gc-pad-sm); text-align: left; line-height: 2em; }
 }
 .gc-listSection {
-    column-width: var(--gc-colWidth); column-count: auto; column-gap: 0.41em;
-    column-rule: 1px solid var(--gc-contentDivider); padding-bottom: 0.42em;
+    column-width: var(--gc-colWidth); column-count: auto; column-gap: var(--gc-pad-sm);
+    column-rule: 1px solid var(--gc-contentDivider); padding-bottom: var(--gc-pad-sm);
 }
 .gc-listEntry {
-    border: none; background-color: var(--gc-main-accent); display: flex; padding: 2px 0.41em 1px 0.41em;
+    border: none; background-color: var(--gc-main-accent); display: flex; padding: 2px var(--gc-pad-sm) 1px var(--gc-pad-sm);
     border-bottom: 1px solid var(--gc-contentDivider); break-inside: avoid; align-items: center;
-    svg { fill: var(--gc-entryIcons); flex: 0 0 auto; padding-right: 0.41em; }
+    svg { fill: var(--gc-entryIcons); flex: 0 0 auto; padding-right: var(--gc-pad-sm); }
     div { flex: 1 1 auto; break-inside: avoid; }
-    div:last-of-type:not(:only-of-type) { margin-left: auto; flex: 0 0 auto; padding-left: 0.83em; }
-    button:last-child { margin-left: auto; flex: 0 0 auto; padding-left: 0.83em; }
+    div:last-of-type:not(:only-of-type) { margin-left: auto; flex: 0 0 auto; padding-left: var(--gc-pad-lg); }
+    button:last-child { margin-left: auto; flex: 0 0 auto; padding-left: var(--gc-pad-lg); }
 }
 .gc-flex-col {
-    flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0.83em;
-    padding: 0.83em; overflow: auto; align-content: center; align-items: center;
+    flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--gc-pad-lg);
+    padding: var(--gc-pad-lg); overflow: auto; align-content: center; align-items: center;
 }
 .gc-hidden { display: none; }
 .gc-arrow { transform: scaleY(-1); transition: transform 0.6s ease; }
@@ -623,7 +633,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
 }
 .gc-Notification {
     position: fixed; background-color: var(--gc-button); color: var(--gc-button-text);
-    border: 1px solid var(--gc-border); border-radius: 5px; padding: 0.5em 1em;
+    border: 1px solid var(--gc-border); border-radius: 5px; padding: var(--gc-pad-sm) var(--gc-pad-lg);
     font-size: var(--gc-fontSize); font-family: var(--gc-FontFamily); pointer-events: none;
     opacity: 0; transition: opacity 0.3s ease; z-index: 10; max-width: 16em;
 }
@@ -727,7 +737,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 updateUI();
             }
         }, 200);
-        // timeout if the enemyPoll for some reason doesn't get populated when a battle starts to ensure it doesn't keep running 
+        // timeout if the enemyPoll for some reason doesn't get populated when a battle starts to ensure it doesn't keep running
         setTimeout(() => clearInterval(enemyPoll), 30000);
 
         injectGCStyles(); buildUI(); updateUI(); applyColumnMode();
@@ -916,6 +926,12 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         }
     }
 
+    function applyPaddingPreset(name) {
+        const preset = paddingPresets[name];
+        Object.entries(preset).forEach(([k, v]) => gcRoot.style.setProperty(k, v));
+        localStorage.setItem("fr_coli_paddingPreset", name);
+    }
+
     const panelResizeObserver = new ResizeObserver(entries => {
         const { width, height } = entries[0].contentRect;
         if (!width || !height) return;
@@ -946,18 +962,18 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         if (toggleStyle === "text") gcMainToggle.appendChild(document.createTextNode("Coliseum Tracker"));
         else if (toggleStyle === "icon-small") {
                 if (toggleContrast) {
-                    gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em; padding: 0.42em; fill: var(--gc-button-text)"))
-                    gcMainToggle.style.backgroundColor = "var(--gc-button)"; 
+                    gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em; padding: var(--gc-pad-sm); fill: var(--gc-button-text)"))
+                    gcMainToggle.style.backgroundColor = "var(--gc-button)";
                 }
                 else {
                     gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em;"))
-                    gcMainToggle.style.backgroundColor = ""; 
+                    gcMainToggle.style.backgroundColor = "";
                 }
         }
         else if (toggleStyle === "icon-large") {
             if (toggleContrast) {
-                gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em; padding: 0.42em; fill: var(--gc-button-text)"));
-                gcMainToggle.style.backgroundColor = "var(--gc-button)"; 
+                gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em; padding: var(--gc-pad-sm); fill: var(--gc-button-text)"));
+                gcMainToggle.style.backgroundColor = "var(--gc-button)";
             }
             else {gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em;"));
                             gcMainToggle.style.backgroundColor = ""; }
@@ -1060,7 +1076,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         const isGrouped = venueGroupMode === "grouped";
 
         function buildWinsEntry(count) {
-            const entry = el("div", { class: "gc-listEntry", style: "margin-bottom: 0.42em; margin-top: -0.42em; border: none;" });
+            const entry = el("div", { class: "gc-listEntry", style: "margin-bottom: var(--gc-pad-sm); calc(var(--gc-pad-sm) * -1); border: none;" });
             const winsDiv = entry.appendChild(el("div", { text: `Wins: ${count}`, style: "text-align: center" }));
             overviewWinsEl = winsDiv;
             return entry;
@@ -1353,7 +1369,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
     function renderQuestsIntoContainer(container, quests, editMode, isCompleted) {
         container.innerHTML = "";
         if (!quests.length) {
-            container.appendChild(el("div", { text: isCompleted ? "No completed quests." : "No active quests.", style: "opacity: 0.5; padding: 0.41em;" }));
+            container.appendChild(el("div", { text: isCompleted ? "No completed quests." : "No active quests.", style: "opacity: 0.5; padding: var(--gc-pad-sm);" }));
             return;
         }
         quests.forEach(q => container.appendChild(buildQuestItem(q, editMode, isCompleted)));
@@ -1415,7 +1431,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         header.appendChild(dividerV());
 
         const venueWrapper = header.appendChild(el("div", { class: "gc-flex-row", style: "flex: 1 1 auto; gap: 0; height: 3em;" }));
-        const venueInfo = venueWrapper.appendChild(el("div", { style: "padding-left: 0.82em" }));
+        const venueInfo = venueWrapper.appendChild(el("div", { style: "padding-left: var(--gc-pad-md)" }));
         gcVenueText = venueInfo.appendChild(el("div", { class: "gc-headerText", text: venueDisplayMap[currentVenue] ?? currentVenue }));
         gcWinsDisplay = venueInfo.appendChild(el("div", { text: "Wins:" }));
 
@@ -1599,7 +1615,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         function refreshGoalsBox() {
             newQuestGoalsBox.innerHTML = "";
             if (!pendingGoals.length) {
-                newQuestGoalsBox.appendChild(el("div", { text: "No goals added yet.", style: "opacity: 0.5; padding: 0.41em;" }));
+                newQuestGoalsBox.appendChild(el("div", { text: "No goals added yet.", style: "opacity: 0.5; padding: var(--gc-pad-sm);" }));
                 return;
             }
             pendingGoals.forEach((goal, i) => {
@@ -1614,7 +1630,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         refreshGoalsBox();
 
         const itemRow = el("div", { class: "gc-flex-row" });
-        const itemInput = itemRow.appendChild(el("input", { type: "text", placeholder: "Item name or ID", style: "padding-right: 0.42em;" }));
+        const itemInput = itemRow.appendChild(el("input", { type: "text", placeholder: "Item name or ID", style: "padding-right: var(--gc-pad-sm);" }));
         const itemAmount = itemRow.appendChild(el("input", { type: "number", placeholder: "Amount", class: "gc-input-narrow", min: "1" }));
         const addItemBtn = itemRow.appendChild(iconBtn("Add"));
         addItemBtn.addEventListener("click", () => {
@@ -1668,7 +1684,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             refreshGoalsBox();
         });
 
-        const addQuestBtn = el("button", { class: "gc-buttonSmall", text: "Add Quest", style: "margin: 0 auto 0.41em auto;" });
+        const addQuestBtn = el("button", { class: "gc-buttonSmall", text: "Add Quest", style: "margin: 0 auto var(--gc-pad-sm) auto;" });
         addQuestBtn.addEventListener("click", () => {
             if (!pendingGoals.length) { flashInvalid(newQuestGoalsBox); return; }
             activeQuests.push(createQuest(questNameInput.value.trim() || null, [...pendingGoals]));
@@ -1723,10 +1739,10 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             activeCategory = gcFooterCategorySelect.value; localStorage.setItem("fr_coli_category", activeCategory); updateUI();
         });
 
-        const resetVenueBtn = el("button", { style: "background-color: var(--gc-button); color: var(--gc-button-text); padding: 0.83em; width: 100%; display: flex; justify-content: space-between;" });
+        const resetVenueBtn = el("button", { style: "background-color: var(--gc-button); color: var(--gc-button-text); padding: var(--gc-pad-md); width: 100%; display: flex; justify-content: space-between;" });
         resetVenueBtn.appendChild(el("div"));
         resetVenueBtn.appendChild(el("div", { text: "Reset Venue" }));
-        const resetArrow = resetVenueBtn.appendChild(createIcon("CollapseExpand", "fill: var(--gc-button-text); padding-left: 0.83em;"));
+        const resetArrow = resetVenueBtn.appendChild(createIcon("CollapseExpand", "fill: var(--gc-button-text); padding-left: var(--gc-pad-md);"));
         resetArrow.classList.add("gc-arrow", "gc-collapsed");
         const resetVenueDropdown = el("div", { class: "gc-hidden", style: "position: fixed; background-color: var(--gc-main-accent); border-radius: 5px; z-index: 10; height: 12em; overflow-y: auto; resize: vertical;" });
 
@@ -1832,14 +1848,17 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             applyToggleStyle();
             });
 
+        makeSettingSelect(panelCol, "Padding:", [["compact", "Compact"],["normal", "Normal"], ["comfortable", "Comfortable"]], paddingMode,
+            v => { paddingMode = v; localStorage.setItem("fr_coli_paddingPreset", v); applyPaddingPreset(v); }, "How much padding the layout will have");
+
         panelCol.appendChild(dividerH());
 
         panelCol.appendChild(el("span", { text: "Settings below are backups if the resize and drag handles do not work on your device. Please use caution since large values may shift the windows off-screen", class: "gc-span", style: "text-align: center; font-size: calc(var(--gc-fontSize) * 0.8)"}));
 
         panelCol.appendChild(el("label", { text: "Main Panel", class: "gc-span", style: "font-weight: bold; text-align: center;", title: "Set size and position for the main panel as a backup if the resize and drag handles do not work on your device" }));
 
-        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null, 
-            v => { const val = parseInt(v); if (!val) return; 
+        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null,
+            v => { const val = parseInt(v); if (!val) return;
                 gcMainPanel.style.width = `${val}px`;
                 requestAnimationFrame(() => {
                 const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
@@ -1847,8 +1866,8 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 localStorage.setItem("fr_coli_panelWidth", actual);
             }); }, "Set main panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.");
 
-        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null, 
-            v => { const val = parseInt(v); if (!val) return; 
+        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null,
+            v => { const val = parseInt(v); if (!val) return;
                 gcMainPanel.style.height = `${val}px`;
                 requestAnimationFrame(() => {
                     const actual = Math.round(gcMainPanel.getBoundingClientRect().height);
@@ -1884,7 +1903,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 localStorage.setItem("fr_coli_settingsPanelWidth", actual);
             });
         }, "Set setting panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.")
-        
+
         settingsHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_settingsPanelHeight") ?? 500, null, null,
         v => {
             const val = parseInt(v);
@@ -1910,7 +1929,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             gcSettingsPanel.style.right = `${val}px`;
             localStorage.setItem("fr_coli_settingsPosRight", val);
         }, "Set position of settings panel from the right edge of the browser in pixels");
-        
+
         gcSettingsContentPanel.appendChild(panelCol);
         return gcSettingsContentPanel;
     }
@@ -1920,7 +1939,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         gcSettingsContentVisual = el("div", { class: "gc-mainContent gc-hidden" });
         const displayCol = el("div", { class: "gc-flex-col" });
 
-        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40", 
+        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40",
             v => { fontSize = parseInt(v); localStorage.setItem("fr_coli_fontSize", v); gcRoot.style.setProperty("--gc-fontSize", `${v}px`);
             applyColumnMode(); }, "Set font size - affects panel size");
 
@@ -1983,7 +2002,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             const row = el("div", { class: "gc-listEntry" });
             const displayGroup = el("div", { class: "gc-flex-row gc-themeDisplayGroup", style: "margin-left: auto; flex: 0 0 auto;" });
             const colorSwatch = el("div", { style: `border-radius: 2px; width: var(--gc-fontSize); height: var(--gc-fontSize); background-color: ${currentValue}` });
-            const hexDisplay = el("div", { text: currentValue, style: "padding: 0.42em 0.83em 0.42em 0.83em; min-width: 5em;" });
+            const hexDisplay = el("div", { text: currentValue, style: "padding: var(--gc-pad-sm) var(--gc-pad-md) var(--gc-pad-sm) var(--gc-pad-md); min-width: 5em;" });
             displayGroup.appendChild(colorSwatch);
             displayGroup.appendChild(hexDisplay);
             const inputGroup = el("div", { class: "gc-flex-row gc-themeInputGroup gc-hidden", style: "margin-left: auto" });
@@ -2043,7 +2062,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
             "Decides if festival drops should show in the festival category only, in both festival and the original category, or be turned off");
 
         optionsCol.appendChild(el("label", { text: "Festival Items", title: "Decides which festival items should be included as festival drops" }));
-        const festivalCheckCol = optionsCol.appendChild(el("div", { class: "gc-flex-col", style: "grid-template-columns: auto 1fr; gap: 0.41em; padding: 0;" }));
+        const festivalCheckCol = optionsCol.appendChild(el("div", { class: "gc-flex-col", style: "grid-template-columns: auto 1fr; gap: var(--gc-pad-sm); padding: 0;" }));
         festivalTypes.forEach(([key, label]) => {
             const checkbox = festivalCheckCol.appendChild(el("input", { type: "checkbox" }));
             checkbox.checked = activeFestivals.has(key);
@@ -2128,9 +2147,9 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         rebuildHighlightDetail();
         gcSettingsContentHighlights.appendChild(optionsCol);
 
-        const importExportRow = el("div", { class: "gc-flex-row gc-span", style: "justify-content: center;" });
+        const importExportRow = el("div", { class: "gc-flex-row gc-span", style: "justify-content: center; flex-wrap: wrap;" });
 
-        const importBtn = el("button", { class: "gc-buttonSmall", text: "Import Preset from File" });
+        const importBtn = el("button", { class: "gc-buttonSmall", text: "Import Preset from File"});
         importBtn.addEventListener("click", () => {
             const input = document.createElement("input");
             input.type = "file"; input.accept = ".json";
@@ -2239,7 +2258,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         container.appendChild(detailWrapper);
 
         const deleteBtn = container.appendChild(el("button", { class: "gc-buttonSmall gc-delete gc-span", text: "Delete Preset", style: "justify-self: center;" }));
-        const resetBtn = container.appendChild(el("button", { class: "gc-buttonSmall gc-span", text: "Reset all Presets to Defaults", style: "justify-self: center; margin-top: 0.83em" }));
+        const resetBtn = container.appendChild(el("button", { class: "gc-buttonSmall gc-span", text: "Reset all Presets to Defaults", style: "justify-self: center;margin-top: var(--gc-pad-md)" }));
 
         let isEditing = false;
         let originalPresetName = activePresetName;
@@ -2392,9 +2411,10 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         themePresetManager._refresh();
         highlightPresetManager._refresh();
         applyTheme(activeThemeName);
-        
+
         applyIconMode();
         applyToggleStyle();
+        applyPaddingPreset(paddingMode);
         gcRoot.style.setProperty("--gc-FontFamily", savedFont);
         gcRoot.style.setProperty("--gc-fontSize", `${fontSize}px`);
 
