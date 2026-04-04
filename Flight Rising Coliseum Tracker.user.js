@@ -500,7 +500,7 @@
     font-size: var(--gc-fontSize); font-family: var(--gc-FontFamily);
     line-height: 1.25em; color: var(--gc-main-text); overflow: visible;
 }
-.gc-root.gc-singleCol .gc-listSection { column-width: 100% !important; column-count: 1; }
+.gc-singleCol .gc-listSection { column-width: 100% !important; column-count: 1; }
 button {
     font-size: inherit; display: flex; justify-content: center; cursor: pointer; align-items: center;
     border-style: none; padding-inline: 0px; padding-block: 0px; padding: 0.83em; border-radius: 5px;
@@ -508,8 +508,8 @@ button {
     background-color: var(--gc-button); color: var(--gc-button-text);
     &:has(svg) { background-color: transparent; padding: 0; }
 }
-label { float: none; width: unset;}
-div { cursor: default; }
+.gc-root label { float: none; width: unset;}
+.gc-root div { cursor: default; }
 .gc-buttonSmall { padding: 0.42em 0.83em 0.42em 0.83em; flex: 0 0 auto; align-self: stretch; }
 .gc-editCancel { background-color: var(--gc-main-accent); color: var(--gc-main-text); margin-left: auto; }
 svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 1.25); fill: var(--gc-icons); }
@@ -517,24 +517,24 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
     background-color: var(--gc-deleteColor); color: var(--gc-deleteColor-accent); fill: var(--gc-deleteColor);
     &:has(svg) { background-color: transparent; padding: 0; margin-left: auto; & svg { fill: var(--gc-deleteColor); } }
 }
-select, input[type="number"] {
+.gc-root select, .gc-root input[type="number"] {
     font-size: inherit; cursor: pointer; flex: 1 1 0; border: 1px solid var(--gc-border); border-radius: 4px;
     padding: 0.41em; background-color: var(--gc-main-accent); font-family: inherit; line-height: 1em; color: inherit;
 }
-input[type="number"] { cursor: text; }
-input[type="color"] {
+.gc-root input[type="number"] { cursor: text; }
+.gc-root input[type="color"] {
     cursor: pointer; inline-size: var(--gc-fontSize); block-size: var(--gc-fontSize); border: none;
     border-radius: 2px; padding: 0px;
     &::-webkit-color-swatch-wrapper { padding: 0px; }
     &::-webkit-color-swatch { border: none; }
 }
-input[type="text"] {
+.gc-root input[type="text"] {
     font-size: inherit; cursor: text; flex: 1 1 0; background-color: var(--gc-main-accent);
     align-items: center; border-style: none; font-family: inherit; line-height: 1em; border-radius: 4px;
     width: 0; padding: 0.42em 0.83em 0.42em 0.83em; color: inherit;
     &::placeholder { color: inherit; opacity: 0.5; }
 }
-input[type="checkbox"] {
+.gc-root input[type="checkbox"] {
     appearance: none; width: 1em; height: 1em; border: 1px solid var(--gc-border); border-radius: 2px;
     background-color: var(--gc-main-accent); cursor: pointer; flex: 0 0 auto;
     &:checked { background-color: var(--gc-button); border-color: var(--gc-button); }
@@ -682,8 +682,18 @@ input[type="checkbox"] {
         }
         function onRelease() {
             const rect = panelEl.getBoundingClientRect();
-            localStorage.setItem(elPositionTop, rect.top);
-            localStorage.setItem(elPositionRight, (document.documentElement.clientWidth - rect.right));
+            const top = Math.round(rect.top);
+            const right = Math.round(window.innerWidth - rect.right);
+            localStorage.setItem(elPositionTop, top);
+            localStorage.setItem(elPositionRight, right);
+            // Update position inputs if they exist
+            if (panelEl === gcMainPanel) {
+                if (panelTopInput) panelTopInput.value = top;
+                if (panelRightInput) panelRightInput.value = right;
+            } else if (panelEl === gcSettingsPanel) {
+                if (settingsTopInput) settingsTopInput.value = top;
+                if (settingsRightInput) settingsRightInput.value = right;
+            }
             document.removeEventListener("mousemove", onDrag);
             window.removeEventListener("mouseleave", onRelease);
         }
@@ -730,6 +740,8 @@ input[type="checkbox"] {
     let gcSettingsPanel, gcSettingsTabVisual, gcSettingsTabHighlights;
     let gcSettingsContentVisual, gcSettingsContentHighlights;
     let colorInputMap = {}, themeDetailEl, highlightDetailEl, themePresetManager, highlightPresetManager;
+    let panelWidthInput, panelHeightInput, settingsWidthInput, settingsHeightInput;
+    let panelTopInput, panelRightInput, settingsTopInput, settingsRightInput;
 
     // --- MORE HELPERS ---
 
@@ -888,6 +900,16 @@ input[type="checkbox"] {
         const { width, height } = entries[0].contentRect;
         localStorage.setItem("fr_coli_panelWidth", Math.round(width));
         localStorage.setItem("fr_coli_panelHeight", Math.round(height));
+        if (panelWidthInput) panelWidthInput.value = Math.round(width);
+        if (panelHeightInput) panelHeightInput.value = Math.round(height);
+    });
+
+    const settingsResizeObserver = new ResizeObserver(entries => {
+        const { width, height } = entries[0].contentRect;
+        localStorage.setItem("fr_coli_settingsPanelWidth", Math.round(width));
+        localStorage.setItem("fr_coli_settingsPanelHeight", Math.round(height));
+        if (settingsWidthInput) settingsWidthInput.value = Math.round(width);
+        if (settingsHeightInput) settingsHeightInput.value = Math.round(height);
     });
 
     function applyIconMode() {
@@ -1132,10 +1154,10 @@ input[type="checkbox"] {
                     goal.progress++; changed = true;
                 }
                 // Enemy encounter goal
-            if (goal.type === "enemy") {
-                const count = currentEnemies.filter(e => e.name.toLowerCase() === goal.enemyName.toLowerCase()).length;
-                if (count > 0) { goal.progress += count; changed = true; }
-            }
+                if (goal.type === "enemy") {
+                    const count = currentEnemies.filter(e => e.name.toLowerCase() === goal.enemyName.toLowerCase()).length;
+                    if (count > 0) { goal.progress += count; changed = true; }
+                }
             });
             if (questBattleCountEnabled) {
                 quest.goals.forEach(goal => {
@@ -1365,6 +1387,12 @@ input[type="checkbox"] {
             gcSettingsPanel.classList.toggle("gc-hidden");
             if (!gcSettingsPanel.classList.contains("gc-hidden")) {
                 gcSettingsPanel.querySelectorAll(".gc-listSection").forEach(fitColumns);
+                const mainRect = gcMainPanel.getBoundingClientRect();
+                const settingsRect = gcSettingsPanel.getBoundingClientRect();
+                if (panelTopInput) panelTopInput.value = Math.round(mainRect.top);
+                if (panelRightInput) panelRightInput.value = Math.round(document.documentElement.clientWidth - mainRect.right);
+                if (settingsTopInput) settingsTopInput.value = Math.round(settingsRect.top);
+                if (settingsRightInput) settingsRightInput.value = Math.round(document.documentElement.clientWidth - settingsRect.right);
             }
         });
 
@@ -1584,7 +1612,7 @@ input[type="checkbox"] {
         const enemyRow = el("div", { class: "gc-flex-row" });
         const enemyInput = enemyRow.appendChild(el("input", { type: "text", placeholder: "Enemy name (exact)" }));
         enemyInput.addEventListener("change", () => {
-        enemyInput.value = enemyInput.value.trim().replace(/\b\w/g, c => c.toUpperCase());
+            enemyInput.value = enemyInput.value.trim().replace(/\b\w/g, c => c.toUpperCase());
         });
         const enemyAmount = enemyRow.appendChild(el("input", { type: "number", placeholder: "Amount", class: "gc-input-narrow", min: "1" }));
         const addEnemyBtn = enemyRow.appendChild(iconBtn("Add"));
@@ -1786,6 +1814,133 @@ input[type="checkbox"] {
         makeSettingSelect(displayCol, "Font:",
             [["Verdana, Geneva, sans-serif", "Verdana"], ["Trebuchet MS, sans-serif", "Trebuchet MS"], ["Arial, sans-serif", "Arial"], ["Tahoma, Geneva, sans-serif", "Tahoma"], ["Segoe UI, sans-serif", "Segoe UI"], ["Georgia, serif", "Georgia"], ["Palatino Linotype, Palatino, serif", "Palatino"], ["Courier New, monospace", "Courier New"], ["Comic Sans MS, sans-serif", "Comic Sans MS"]], savedFont,
             v => { savedFont = v; gcRoot.style.setProperty("--gc-FontFamily", v); localStorage.setItem("fr_coli_fontFamily", v); });
+
+        displayCol.appendChild(dividerH());
+        displayCol.appendChild(el("label", { text: "Main Panel", class: "gc-span", style: "font-weight: bold;" }));
+
+        // Width
+        displayCol.appendChild(el("label", { text: "Width (px):" }));
+        panelWidthInput = displayCol.appendChild(el("input", {
+            type: "number", min: "100", max: "2000",
+            value: localStorage.getItem("fr_coli_panelWidth") ?? 480
+        }));
+        panelWidthInput.addEventListener("change", () => {
+            const val = parseInt(panelWidthInput.value);
+            if (!val) return;
+            gcMainPanel.style.width = `${val}px`;
+            // Snap back to actual minimum if content is wider
+            requestAnimationFrame(() => {
+                const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
+                if (actual !== val) panelWidthInput.value = actual;
+                localStorage.setItem("fr_coli_panelWidth", actual);
+            });
+        });
+
+        // Height
+        displayCol.appendChild(el("label", { text: "Height (px):" }));
+        panelHeightInput = displayCol.appendChild(el("input", {
+            type: "number", min: "100", max: "2000",
+            value: localStorage.getItem("fr_coli_panelHeight") ?? 640
+        }));
+        panelHeightInput.addEventListener("change", () => {
+            const val = parseInt(panelHeightInput.value);
+            if (!val) return;
+            gcMainPanel.style.height = `${val}px`;
+            requestAnimationFrame(() => {
+                const actual = Math.round(gcMainPanel.getBoundingClientRect().height);
+                if (actual !== val) panelHeightInput.value = actual;
+                localStorage.setItem("fr_coli_panelHeight", actual);
+            });
+        });
+
+        // Top position
+        displayCol.appendChild(el("label", { text: "Distance from top (px):" }));
+        panelTopInput = displayCol.appendChild(el("input", {
+            type: "number", min: "0",
+            value: localStorage.getItem("fr_coli_posTop") ?? 10
+        }));
+        panelTopInput.addEventListener("change", () => {
+            const val = parseInt(panelTopInput.value);
+            if (isNaN(val) || val < 0) return;
+            gcMainPanel.style.top = `${val}px`;
+            localStorage.setItem("fr_coli_posTop", val);
+        });
+
+        // Right position
+        displayCol.appendChild(el("label", { text: "Distance from right (px):" }));
+        panelRightInput = displayCol.appendChild(el("input", {
+            type: "number", min: "0",
+            value: localStorage.getItem("fr_coli_posRight") ?? 10
+        }));
+        panelRightInput.addEventListener("change", () => {
+            const val = parseInt(panelRightInput.value);
+            if (isNaN(val) || val < 0) return;
+            gcMainPanel.style.right = `${val}px`;
+            localStorage.setItem("fr_coli_posRight", val);
+        });
+
+        displayCol.appendChild(dividerH());
+        displayCol.appendChild(el("label", { text: "Settings Panel", class: "gc-span", style: "font-weight: bold;" }));
+
+        // Settings width
+        displayCol.appendChild(el("label", { text: "Width (px):" }));
+        settingsWidthInput = displayCol.appendChild(el("input", {
+            type: "number", min: "100", max: "2000",
+            value: localStorage.getItem("fr_coli_settingsPanelWidth") ?? 480
+        }));
+        settingsWidthInput.addEventListener("change", () => {
+            const val = parseInt(settingsWidthInput.value);
+            if (!val) return;
+            gcSettingsPanel.style.width = `${val}px`;
+            requestAnimationFrame(() => {
+                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().width);
+                if (actual !== val) settingsWidthInput.value = actual;
+                localStorage.setItem("fr_coli_settingsPanelWidth", actual);
+            });
+        });
+
+        // Settings height
+        displayCol.appendChild(el("label", { text: "Height (px):" }));
+        settingsHeightInput = displayCol.appendChild(el("input", {
+            type: "number", min: "100", max: "2000",
+            value: localStorage.getItem("fr_coli_settingsPanelHeight") ?? 640
+        }));
+        settingsHeightInput.addEventListener("change", () => {
+            const val = parseInt(settingsHeightInput.value);
+            if (!val) return;
+            gcSettingsPanel.style.height = `${val}px`;
+            requestAnimationFrame(() => {
+                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().height);
+                if (actual !== val) settingsHeightInput.value = actual;
+                localStorage.setItem("fr_coli_settingsPanelHeight", actual);
+            });
+        });
+
+        // Settings top position
+        displayCol.appendChild(el("label", { text: "Distance from top (px):" }));
+        settingsTopInput = displayCol.appendChild(el("input", {
+            type: "number", min: "0",
+            value: localStorage.getItem("fr_coli_settingsPosTop") ?? 10
+        }));
+        settingsTopInput.addEventListener("change", () => {
+            const val = parseInt(settingsTopInput.value);
+            if (isNaN(val) || val < 0) return;
+            gcSettingsPanel.style.top = `${val}px`;
+            localStorage.setItem("fr_coli_settingsPosTop", val);
+        });
+
+        // Settings right position
+        displayCol.appendChild(el("label", { text: "Distance from right (px):" }));
+        settingsRightInput = displayCol.appendChild(el("input", {
+            type: "number", min: "0",
+            value: localStorage.getItem("fr_coli_settingsPosRight") ?? 10
+        }));
+        settingsRightInput.addEventListener("change", () => {
+            const val = parseInt(settingsRightInput.value);
+            if (isNaN(val) || val < 0) return;
+            gcSettingsPanel.style.right = `${val}px`;
+            localStorage.setItem("fr_coli_settingsPosRight", val);
+        });
 
         displayCol.appendChild(dividerH());
 
@@ -2184,12 +2339,16 @@ input[type="checkbox"] {
         });
         gcMainPanel.appendChild(buildMainHeader());
         gcMainPanel.appendChild(buildMainTabs());
+
         gcMainPanel.appendChild(buildBBCodeContent());
         gcMainPanel.appendChild(buildOverviewContent());
         gcMainPanel.appendChild(buildQuestsContent());
         gcMainPanel.appendChild(buildMainFooter());
 
-        gcSettingsPanel = el("div", { class: "gc-panel gc-hidden", style: `z-index: 4; top: ${localStorage.getItem("fr_coli_settingsPosTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_settingsPosRight") ?? 10}px` });
+        gcSettingsPanel = el("div", {
+            class: "gc-panel gc-hidden",
+            style: `z-index: 4; top: ${localStorage.getItem("fr_coli_settingsPosTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_settingsPosRight") ?? 10}px; width: ${localStorage.getItem("fr_coli_settingsPanelWidth") ?? 300}px; height: ${localStorage.getItem("fr_coli_settingsPanelHeight") ?? 400}px;`
+        });
         gcSettingsPanel.appendChild(buildSettingsHeader());
         gcSettingsPanel.appendChild(buildSettingsTabs());
         gcSettingsPanel.appendChild(buildVisualSettingsContent());
@@ -2198,6 +2357,7 @@ input[type="checkbox"] {
 
         gcMainToggle = el("button", { text: "Coliseum tracker", style: `position: fixed; top: ${localStorage.getItem("fr_coli_toggleTop") ?? localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_toggleRight") ?? localStorage.getItem("fr_coli_posRight") ?? 10}px;` });
         panelResizeObserver.observe(gcMainPanel);
+        settingsResizeObserver.observe(gcSettingsPanel);
         const toggleHandle = gcMainToggle.appendChild(el("div", { style: "position: absolute; top: 0; right: 0; width: 1.5em; height: 1.5em; cursor: grab;" }));
 
         gcMainPanel.classList.toggle("gc-hidden", panelHidden);
