@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flight Rising Coliseum Tracker
 // @namespace    https://tampermonkey.net/
-// @version      2.0.2
+// @version      2.1.0
 // @description  Tool that tracks loot and battles fought in the Coliseum, with BBCode formatter, quests tracking, categories and highlights.
 // @match        https://flightrising.com/main.php?p=battle*
 // @grant        none
@@ -737,8 +737,8 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
     let gcFooterCategorySelect, gcFooterSortSelect, tabMap, gcQuestNotif;
     let gcActiveQuestsBox, gcCompletedQuestsBox;
     let questEditMode = false, completedEditMode = false;
-    let gcSettingsPanel, gcSettingsTabVisual, gcSettingsTabHighlights;
-    let gcSettingsContentVisual, gcSettingsContentHighlights;
+    let gcSettingsPanel, gcSettingsTabVisual, gcSettingsTabHighlights, gcSettingsTabPanel;
+    let gcSettingsContentVisual, gcSettingsContentHighlights, gcSettingsContentPanel;
     let colorInputMap = {}, themeDetailEl, highlightDetailEl, themePresetManager, highlightPresetManager;
     let panelWidthInput, panelHeightInput, settingsWidthInput, settingsHeightInput;
     let panelTopInput, panelRightInput, settingsTopInput, settingsRightInput;
@@ -781,6 +781,19 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         select.value = value;
         select.addEventListener("change", () => applyFn(select.value));
         return select;
+    }
+
+    function makeSettingInput(parent, labelText, type, value, min = null, max = null, applyFn, tooltip ="") {
+        const labelAttrs = { text: labelText };
+        if (tooltip) labelAttrs.title = tooltip;
+        parent.appendChild(el("label", labelAttrs));
+        const input = parent.appendChild(el("input"));
+        input.type = type;
+        input.value = value;
+        if(min) input.min = min;
+        if (max) input.max = max;
+        input.addEventListener("change", () => applyFn(input.value));
+        return input;
     }
 
     // Creates the venue select used in BBCode and Overview tabs.
@@ -898,6 +911,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
 
     const panelResizeObserver = new ResizeObserver(entries => {
         const { width, height } = entries[0].contentRect;
+        if (!width || !height) return;
         localStorage.setItem("fr_coli_panelWidth", Math.round(width));
         localStorage.setItem("fr_coli_panelHeight", Math.round(height));
         if (panelWidthInput) panelWidthInput.value = Math.round(width);
@@ -906,6 +920,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
 
     const settingsResizeObserver = new ResizeObserver(entries => {
         const { width, height } = entries[0].contentRect;
+                if (!width || !height) return;
         localStorage.setItem("fr_coli_settingsPanelWidth", Math.round(width));
         localStorage.setItem("fr_coli_settingsPanelHeight", Math.round(height));
         if (settingsWidthInput) settingsWidthInput.value = Math.round(width);
@@ -1386,6 +1401,10 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         gearBtn.addEventListener("click", () => {
             gcSettingsPanel.classList.toggle("gc-hidden");
             if (!gcSettingsPanel.classList.contains("gc-hidden")) {
+                const width = localStorage.getItem("fr_coli_settingsPanelWidth");
+                const height = localStorage.getItem("fr_coli_settingsPanelHeight");
+                if (width) gcSettingsPanel.style.width = `${width}px`;
+                if (height) gcSettingsPanel.style.height = `${height}px`;
                 gcSettingsPanel.querySelectorAll(".gc-listSection").forEach(fitColumns);
                 const mainRect = gcMainPanel.getBoundingClientRect();
                 const settingsRect = gcSettingsPanel.getBoundingClientRect();
@@ -1758,15 +1777,125 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         const tabs = el("div", { class: "gc-tabs" });
         gcSettingsTabVisual = tabs.appendChild(el("button", { text: "Visual" }));
         gcSettingsTabHighlights = tabs.appendChild(el("button", { text: "Highlights" }));
+        gcSettingsTabPanel = tabs.appendChild(el("button", { text: "Panel" }));
         gcSettingsTabVisual.addEventListener("click", () => { switchTab("Visual"); fitColumns(themeDetailEl); });
         gcSettingsTabHighlights.addEventListener("click", () => { switchTab("Highlights"); fitColumns(highlightDetailEl); });
+        gcSettingsTabPanel.addEventListener("click", () => { switchTab("Panel")});
         return tabs;
+    }
+
+    // --- BUILD PANEL SETTINGS CONTENT ---
+    function buildPanelSettingsContent() {
+        gcSettingsContentPanel = el("div", { class: "gc-mainContent gc-hidden" });
+        const panelCol = el("div", { class: "gc-flex-col" });
+
+        makeSettingSelect(panelCol, "Toggle Position:",
+            [["top-right", "Top Right"], ["top-left", "Top Left"], ["bottom-right", "Bottom Right"], ["bottom-left", "Bottom Left"]], toggleCorner,
+            v => { toggleCorner = v; localStorage.setItem("fr_coli_toggleCorner", v); },
+            "Which corner of the panel the toggle button collapses to");
+
+        makeSettingSelect(panelCol, "Toggle Style:",
+            [["text", "Text"], ["icon-small", "Icon (Small)"], ["icon-large", "Icon (Large)"]], toggleStyle,
+            v => { toggleStyle = v; localStorage.setItem("fr_coli_toggleStyle", v); applyToggleStyle(); },
+            "The appearance of the collapse toggle button");
+
+        panelCol.appendChild(dividerH());
+
+        panelCol.appendChild(el("span", { text: "Settings below are backups if the resize and drag handles do not work on your device. Please use caution since large values may shift the windows off-screen", class: "gc-span", style: "text-align: center; font-size: calc(var(--gc-fontSize) * 0.8)"}));
+
+        panelCol.appendChild(el("label", { text: "Main Panel", class: "gc-span", style: "font-weight: bold; text-align: center;", title: "Set size and position for the main panel as a backup if the resize and drag handles do not work on your device" }));
+
+        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null, 
+            v => { const val = parseInt(v); if (!val) return; 
+                gcMainPanel.style.width = `${val}px`;
+                requestAnimationFrame(() => {
+                const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
+                if (actual !== val) panelWidthInput.value = actual;
+                localStorage.setItem("fr_coli_panelWidth", actual);
+            }); }, "Set main panel width in pixels");
+
+        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null, 
+            v => { const val = parseInt(v); if (!val) return; 
+                gcMainPanel.style.height = `${val}px`;
+                requestAnimationFrame(() => {
+                    const actual = Math.round(gcMainPanel.getBoundingClientRect().height);
+                    if (actual !== val) panelHeightInput.value = actual;
+                    localStorage.setItem("fr_coli_panelHeight", actual);
+                }); }, "Set main panel height in pixels");
+
+        panelTopInput = makeSettingInput(panelCol, "Distance from top:", "number", localStorage.getItem("fr_coli_posTop") ?? 10, 0, null,
+        v => {
+            const val = parseInt(v); if (isNaN(val) || val < 0) return;
+            gcMainPanel.style.top = `${val}px`;
+            localStorage.setItem("fr_coli_posTop", val);
+        }, "Set position of panel from the top of the browser edge in pixels");
+
+        panelRightInput = makeSettingInput(panelCol, "Distance from right:", "number", localStorage.getItem("fr_coli_posRight") ?? 10, 0, null,
+        v => {
+            const val = parseInt(v); if (isNaN(val) || val < 0) return;
+            gcMainPanel.style.right = `${val}px`;
+            localStorage.setItem("fr_coli_posRight", val);
+        }, "Set position of panel from the right edge of the browser in pixels");
+
+        panelCol.appendChild(dividerH());
+        panelCol.appendChild(el("label", { text: "Settings Panel", class: "gc-span", style: "font-weight: bold; text-align: center;", title: "Set size and position for the settings panel as a backup if the resize and drag handles do not work on your device" }));
+
+        settingsWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_settingsPanelWidth") ?? 400, null, null,
+        v => {
+            const val = parseInt(v);
+            if (!val) return;
+            gcSettingsPanel.style.width = `${val}px`;
+            requestAnimationFrame(() => {
+                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().width);
+                if (actual !== val) settingsWidthInput.value = actual;
+                localStorage.setItem("fr_coli_settingsPanelWidth", actual);
+            });
+        }, "Set setting panel width in pixels")
+        
+        settingsHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_settingsPanelHeight") ?? 500, null, null,
+        v => {
+            const val = parseInt(v);
+            if (!val) return;
+            gcSettingsPanel.style.height = `${val}px`;
+            requestAnimationFrame(() => {
+                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().height);
+                if (actual !== val) settingsHeightInput.value = actual;
+                localStorage.setItem("fr_coli_settingsPanelHeight", actual);
+            });
+        }, "Set setting panel height in pixels")
+
+        settingsTopInput = makeSettingInput(panelCol, "Distance from top:", "number", localStorage.getItem("fr_coli_settingsPosTop") ?? 10, 0, null,
+                v => {
+                    const val = parseInt(v); if (isNaN(val) || val < 0) return;
+                    gcSettingsPanel.style.top = `${val}px`;
+                    localStorage.setItem("fr_coli_settingsPosTop", val);
+                }, "Set position of the settings panel from the top of the browser edge in pixels");
+
+        settingsRightInput = makeSettingInput(panelCol, "Distance from right:", "number", localStorage.getItem("fr_coli_settingsPosRight") ?? 10, 0, null,
+        v => {
+            const val = parseInt(v); if (isNaN(val) || val < 0) return;
+            gcSettingsPanel.style.right = `${val}px`;
+            localStorage.setItem("fr_coli_settingsPosRight", val);
+        }, "Set position of settings panel from the right edge of the browser in pixels");
+        
+        gcSettingsContentPanel.appendChild(panelCol);
+        return gcSettingsContentPanel;
     }
 
     // --- BUILD VISUAL SETTINGS CONTENT ---
     function buildVisualSettingsContent() {
         gcSettingsContentVisual = el("div", { class: "gc-mainContent gc-hidden" });
         const displayCol = el("div", { class: "gc-flex-col" });
+
+        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40", 
+            v => { fontSize = parseInt(v); localStorage.setItem("fr_coli_fontSize", v); gcRoot.style.setProperty("--gc-fontSize", `${v}px`);
+            applyColumnMode(); }, "Set font size - affects panel size");
+
+        makeSettingSelect(displayCol, "Font:",
+            [["Verdana, Geneva, sans-serif", "Verdana"], ["Trebuchet MS, sans-serif", "Trebuchet MS"], ["Arial, sans-serif", "Arial"], ["Tahoma, Geneva, sans-serif", "Tahoma"], ["Segoe UI, sans-serif", "Segoe UI"], ["Georgia, serif", "Georgia"], ["Palatino Linotype, Palatino, serif", "Palatino"], ["Courier New, monospace", "Courier New"], ["Comic Sans MS, sans-serif", "Comic Sans MS"]], savedFont,
+            v => { savedFont = v; gcRoot.style.setProperty("--gc-FontFamily", v); localStorage.setItem("fr_coli_fontFamily", v); }, "Select font");
+
+        displayCol.appendChild(dividerH());
 
         makeSettingSelect(displayCol, "Header Mode:",
             [["always", "Always"], ["all", "All Only"], ["none", "None"]], headerMode,
@@ -1802,170 +1931,15 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
 
         displayCol.appendChild(dividerH());
 
-        displayCol.appendChild(el("label", { text: "Font size:" }));
-        const fontSizeInput = displayCol.appendChild(el("input", { type: "number", min: "5", max: "40", value: fontSize }));
-        fontSizeInput.addEventListener("change", () => {
-            fontSize = parseInt(fontSizeInput.value);
-            localStorage.setItem("fr_coli_fontSize", fontSize);
-            gcRoot.style.setProperty("--gc-fontSize", `${fontSize}px`);
-            applyColumnMode();
-        });
-
-        makeSettingSelect(displayCol, "Font:",
-            [["Verdana, Geneva, sans-serif", "Verdana"], ["Trebuchet MS, sans-serif", "Trebuchet MS"], ["Arial, sans-serif", "Arial"], ["Tahoma, Geneva, sans-serif", "Tahoma"], ["Segoe UI, sans-serif", "Segoe UI"], ["Georgia, serif", "Georgia"], ["Palatino Linotype, Palatino, serif", "Palatino"], ["Courier New, monospace", "Courier New"], ["Comic Sans MS, sans-serif", "Comic Sans MS"]], savedFont,
-            v => { savedFont = v; gcRoot.style.setProperty("--gc-FontFamily", v); localStorage.setItem("fr_coli_fontFamily", v); });
-
-        displayCol.appendChild(dividerH());
-        displayCol.appendChild(el("label", { text: "Main Panel", class: "gc-span", style: "font-weight: bold;" }));
-
-        // Width
-        displayCol.appendChild(el("label", { text: "Width (px):" }));
-        panelWidthInput = displayCol.appendChild(el("input", {
-            type: "number", min: "100", max: "2000",
-            value: localStorage.getItem("fr_coli_panelWidth") ?? 480
-        }));
-        panelWidthInput.addEventListener("change", () => {
-            const val = parseInt(panelWidthInput.value);
-            if (!val) return;
-            gcMainPanel.style.width = `${val}px`;
-            // Snap back to actual minimum if content is wider
-            requestAnimationFrame(() => {
-                const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
-                if (actual !== val) panelWidthInput.value = actual;
-                localStorage.setItem("fr_coli_panelWidth", actual);
-            });
-        });
-
-        // Height
-        displayCol.appendChild(el("label", { text: "Height (px):" }));
-        panelHeightInput = displayCol.appendChild(el("input", {
-            type: "number", min: "100", max: "2000",
-            value: localStorage.getItem("fr_coli_panelHeight") ?? 640
-        }));
-        panelHeightInput.addEventListener("change", () => {
-            const val = parseInt(panelHeightInput.value);
-            if (!val) return;
-            gcMainPanel.style.height = `${val}px`;
-            requestAnimationFrame(() => {
-                const actual = Math.round(gcMainPanel.getBoundingClientRect().height);
-                if (actual !== val) panelHeightInput.value = actual;
-                localStorage.setItem("fr_coli_panelHeight", actual);
-            });
-        });
-
-        // Top position
-        displayCol.appendChild(el("label", { text: "Distance from top (px):" }));
-        panelTopInput = displayCol.appendChild(el("input", {
-            type: "number", min: "0",
-            value: localStorage.getItem("fr_coli_posTop") ?? 10
-        }));
-        panelTopInput.addEventListener("change", () => {
-            const val = parseInt(panelTopInput.value);
-            if (isNaN(val) || val < 0) return;
-            gcMainPanel.style.top = `${val}px`;
-            localStorage.setItem("fr_coli_posTop", val);
-        });
-
-        // Right position
-        displayCol.appendChild(el("label", { text: "Distance from right (px):" }));
-        panelRightInput = displayCol.appendChild(el("input", {
-            type: "number", min: "0",
-            value: localStorage.getItem("fr_coli_posRight") ?? 10
-        }));
-        panelRightInput.addEventListener("change", () => {
-            const val = parseInt(panelRightInput.value);
-            if (isNaN(val) || val < 0) return;
-            gcMainPanel.style.right = `${val}px`;
-            localStorage.setItem("fr_coli_posRight", val);
-        });
-
-        displayCol.appendChild(dividerH());
-        displayCol.appendChild(el("label", { text: "Settings Panel", class: "gc-span", style: "font-weight: bold;" }));
-
-        // Settings width
-        displayCol.appendChild(el("label", { text: "Width (px):" }));
-        settingsWidthInput = displayCol.appendChild(el("input", {
-            type: "number", min: "100", max: "2000",
-            value: localStorage.getItem("fr_coli_settingsPanelWidth") ?? 480
-        }));
-        settingsWidthInput.addEventListener("change", () => {
-            const val = parseInt(settingsWidthInput.value);
-            if (!val) return;
-            gcSettingsPanel.style.width = `${val}px`;
-            requestAnimationFrame(() => {
-                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().width);
-                if (actual !== val) settingsWidthInput.value = actual;
-                localStorage.setItem("fr_coli_settingsPanelWidth", actual);
-            });
-        });
-
-        // Settings height
-        displayCol.appendChild(el("label", { text: "Height (px):" }));
-        settingsHeightInput = displayCol.appendChild(el("input", {
-            type: "number", min: "100", max: "2000",
-            value: localStorage.getItem("fr_coli_settingsPanelHeight") ?? 640
-        }));
-        settingsHeightInput.addEventListener("change", () => {
-            const val = parseInt(settingsHeightInput.value);
-            if (!val) return;
-            gcSettingsPanel.style.height = `${val}px`;
-            requestAnimationFrame(() => {
-                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().height);
-                if (actual !== val) settingsHeightInput.value = actual;
-                localStorage.setItem("fr_coli_settingsPanelHeight", actual);
-            });
-        });
-
-        // Settings top position
-        displayCol.appendChild(el("label", { text: "Distance from top (px):" }));
-        settingsTopInput = displayCol.appendChild(el("input", {
-            type: "number", min: "0",
-            value: localStorage.getItem("fr_coli_settingsPosTop") ?? 10
-        }));
-        settingsTopInput.addEventListener("change", () => {
-            const val = parseInt(settingsTopInput.value);
-            if (isNaN(val) || val < 0) return;
-            gcSettingsPanel.style.top = `${val}px`;
-            localStorage.setItem("fr_coli_settingsPosTop", val);
-        });
-
-        // Settings right position
-        displayCol.appendChild(el("label", { text: "Distance from right (px):" }));
-        settingsRightInput = displayCol.appendChild(el("input", {
-            type: "number", min: "0",
-            value: localStorage.getItem("fr_coli_settingsPosRight") ?? 10
-        }));
-        settingsRightInput.addEventListener("change", () => {
-            const val = parseInt(settingsRightInput.value);
-            if (isNaN(val) || val < 0) return;
-            gcSettingsPanel.style.right = `${val}px`;
-            localStorage.setItem("fr_coli_settingsPosRight", val);
-        });
-
-        displayCol.appendChild(dividerH());
-
         makeSettingSelect(displayCol, "Column Mode:",
             [["auto", "Auto"], ["single", "Single"]], columnMode,
             v => { columnMode = v; localStorage.setItem("fr_coli_columnMode", v); applyColumnMode(); },
-            "Auto fits columns to content width, Single forces one column everywhere");
+            "Auto fits columns to content width, Single forces one column");
 
         makeSettingSelect(displayCol, "Icon Mode:",
             [["both", "Both"], ["headers", "Headers Only"], ["entries", "Entries Only"]], iconMode,
             v => { iconMode = v; localStorage.setItem("fr_coli_iconMode", v); applyIconMode(); },
-            "Where to show category icons — in headers, entries, or both");
-
-        displayCol.appendChild(dividerH());
-
-        makeSettingSelect(displayCol, "Toggle Position:",
-            [["top-right", "Top Right"], ["top-left", "Top Left"], ["bottom-right", "Bottom Right"], ["bottom-left", "Bottom Left"]], toggleCorner,
-            v => { toggleCorner = v; localStorage.setItem("fr_coli_toggleCorner", v); },
-            "Which corner of the panel the toggle button collapses to");
-
-        makeSettingSelect(displayCol, "Toggle Style:",
-            [["text", "Text"], ["icon-small", "Icon (Small)"], ["icon-large", "Icon (Large)"]], toggleStyle,
-            v => { toggleStyle = v; localStorage.setItem("fr_coli_toggleStyle", v); applyToggleStyle(); },
-            "The appearance of the collapse toggle button");
-
+            "Where to show category icons: in headers, entries, or both");
 
         displayCol.appendChild(dividerH());
 
@@ -2335,7 +2309,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
     // --- BUILD UI ---
     function buildUI() {
         gcMainPanel = el("div", {
-            class: "gc-panel", style: `top: ${localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_posRight") ?? 10}px; width: ${localStorage.getItem("fr_coli_panelWidth") ?? 300}px; height: ${localStorage.getItem("fr_coli_panelHeight") ?? 400}px;`
+            class: "gc-panel", style: `top: ${localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_posRight") ?? 10}px; width: ${localStorage.getItem("fr_coli_panelWidth") ?? 400}px; height: ${localStorage.getItem("fr_coli_panelHeight") ?? 500}px;`
         });
         gcMainPanel.appendChild(buildMainHeader());
         gcMainPanel.appendChild(buildMainTabs());
@@ -2347,12 +2321,13 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
 
         gcSettingsPanel = el("div", {
             class: "gc-panel gc-hidden",
-            style: `z-index: 4; top: ${localStorage.getItem("fr_coli_settingsPosTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_settingsPosRight") ?? 10}px; width: ${localStorage.getItem("fr_coli_settingsPanelWidth") ?? 300}px; height: ${localStorage.getItem("fr_coli_settingsPanelHeight") ?? 400}px;`
+            style: `z-index: 4; top: ${localStorage.getItem("fr_coli_settingsPosTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_settingsPosRight") ?? 10}px; width: ${localStorage.getItem("fr_coli_settingsPanelWidth") ?? 400}px; height: ${localStorage.getItem("fr_coli_settingsPanelHeight") ?? 500}px;`
         });
         gcSettingsPanel.appendChild(buildSettingsHeader());
         gcSettingsPanel.appendChild(buildSettingsTabs());
         gcSettingsPanel.appendChild(buildVisualSettingsContent());
         gcSettingsPanel.appendChild(buildHighlightsSettingsContent());
+        gcSettingsPanel.appendChild(buildPanelSettingsContent());
         gcSettingsPanel.appendChild(buildSettingsFooter());
 
         gcMainToggle = el("button", { text: "Coliseum tracker", style: `position: fixed; top: ${localStorage.getItem("fr_coli_toggleTop") ?? localStorage.getItem("fr_coli_posTop") ?? 10}px; right: ${localStorage.getItem("fr_coli_toggleRight") ?? localStorage.getItem("fr_coli_posRight") ?? 10}px;` });
@@ -2384,9 +2359,11 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
         themePresetManager._refresh();
         highlightPresetManager._refresh();
         applyTheme(activeThemeName);
+        
         applyIconMode();
         applyToggleStyle();
         gcRoot.style.setProperty("--gc-FontFamily", savedFont);
+        gcRoot.style.setProperty("--gc-fontSize", `${fontSize}px`);
 
         gcQuestNotif = el("div", { class: "gc-Notification" });
         positionQuestNotification();
@@ -2406,6 +2383,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 _storageKey: "fr_coli_activeSetTab",
                 Visual: [gcSettingsContentVisual, gcSettingsTabVisual],
                 Highlights: [gcSettingsContentHighlights, gcSettingsTabHighlights],
+                Panel: [gcSettingsContentPanel, gcSettingsTabPanel],
             }
         };
 
