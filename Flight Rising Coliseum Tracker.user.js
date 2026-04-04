@@ -1845,7 +1845,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
                 if (actual !== val) panelWidthInput.value = actual;
                 localStorage.setItem("fr_coli_panelWidth", actual);
-            }); }, "Set main panel width in pixels");
+            }); }, "Set main panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.");
 
         panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null, 
             v => { const val = parseInt(v); if (!val) return; 
@@ -1883,7 +1883,7 @@ svg { width: calc(var(--gc-fontSize) * 1.25); height: calc(var(--gc-fontSize) * 
                 if (actual !== val) settingsWidthInput.value = actual;
                 localStorage.setItem("fr_coli_settingsPanelWidth", actual);
             });
-        }, "Set setting panel width in pixels")
+        }, "Set setting panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.")
         
         settingsHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_settingsPanelHeight") ?? 500, null, null,
         v => {
