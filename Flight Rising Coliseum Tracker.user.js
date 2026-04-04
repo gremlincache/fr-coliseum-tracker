@@ -596,7 +596,7 @@ input[type="checkbox"] {
 .gc-scrollBox--resize { flex: 0 0 auto; resize: vertical; min-height: 3em; }
 .gc-flex-row, .gc-flex-row-sb { display: flex; gap: var(--gc-pad-md); justify-content: flex-start; align-items: center; }
 .gc-flex-row-sb {
-    justify-content: space-between; padding: 0 var(--gc-pad-sm) 0v ar(--gc-pad-sm);
+    justify-content: space-between; padding: 0 var(--gc-pad-sm) 0 var(--gc-pad-sm);
     div:last-child { margin-left: auto; }
 }
 .gc-listHeader {
