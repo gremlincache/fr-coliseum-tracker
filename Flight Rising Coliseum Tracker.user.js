@@ -155,7 +155,8 @@
     function showHeader() {
         return headerMode === "always" || (headerMode === "all" && activeCategory === "All");
     }
-
+    
+    const sessionDropOrder = [];
     const venueDataCache = {};
     function getVenueData(v) {
         if (!venueDataCache[v]) {
@@ -234,13 +235,22 @@
             name: (a, b) => a.name.localeCompare(b.name),
             id: (a, b) => Number(a.id) - Number(b.id),
             amount: (a, b) => b.amount - a.amount || a.name.localeCompare(b.name),
+            recent: (a, b) => {
+                const aId = sessionDropOrder.indexOf(a.id);
+                const bId = sessionDropOrder.indexOf(b.id);
+                if (aId === -1 && bId === -1) return 0;
+                if (aId === -1) return 1;
+                if (bId === -1) return -1;
+                return aId - bId;
+            },
         };
         const categoryComparator = (a, b) => categoryOrder(a.category) - categoryOrder(b.category);
         const comparators = {
-            name: baseComparators.name, id: baseComparators.id, amount: baseComparators.amount,
+            name: baseComparators.name, id: baseComparators.id, amount: baseComparators.amount, recent: baseComparators.recent,
             "category-name": (a, b) => categoryComparator(a, b) || baseComparators.name(a, b),
             "category-id": (a, b) => categoryComparator(a, b) || baseComparators.id(a, b),
             "category-amount": (a, b) => categoryComparator(a, b) || baseComparators.amount(a, b),
+            "category-recent": (a, b) => categoryComparator(a, b) || baseComparators.recent(a, b),
         };
         if (comparators[sortBy]) entries.sort(comparators[sortBy]);
         return entries;
@@ -266,7 +276,7 @@
     }
 
     function groupEntries(entries, sortBy) {
-        if (sortBy !== "category-name" && sortBy !== "category-id" && sortBy !== "category-amount") {
+        if (!sortBy.startsWith("category")) {
             return [{ key: null, entries }];
         }
         const groups = [];
@@ -400,35 +410,41 @@
         window.WebSocket = function (url, ...rest) {
             const ws = new OriginalWebSocket(url, ...rest);
             if (url.includes("/battle")) {
-                ws.addEventListener("message", event => {
-                    try {
-                        const jsonData = JSON.parse(event.data.slice(event.data.indexOf("[")));
-                        if (!Array.isArray(jsonData) || !jsonData[1]) return;
-
-                        // Battle-load message: venue key is a string, enemies array follows
-                        if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
-                            currentVenue = jsonData[1][0];
-                            localStorage.setItem("fr_coli_currentVenue", currentVenue);
-                            currentEnemies = jsonData[1][1].map(e => ({
-                                name: e[3].trim(),
-                                element: e[6]
-                            }));
-                            return;
-                        }
-
-                        // Win message
-                        if (jsonData[1][0] === "P1_WIN") {
-                            const venueData = getVenueData(currentVenue);
-                            const drops = jsonData[1][2];
-                            venueData.battleCount++;
-                            drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
-                            saveVenueData(currentVenue, venueData);
-                            updateQuestProgress(drops);
-                            updateUI(drops);
-
-                        }
-                    } catch (err) { console.warn("Coliseum Tracker parse error:", err); }
-                });
+            ws.addEventListener("message", event => {
+                if (event.data.indexOf("[") === -1) return; // not JSON, skip silently
+                let jsonData;
+                try { jsonData = JSON.parse(event.data.slice(event.data.indexOf("[")));} 
+                catch { return; }
+                // Only warn on logic errors, not parse errors
+                try {
+                    if (!Array.isArray(jsonData) || !jsonData[1]) return;
+                    if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
+                        currentVenue = jsonData[1][0];
+                        localStorage.setItem("fr_coli_currentVenue", currentVenue);
+                        currentEnemies = jsonData[1][1].map(e => ({
+                            name: e[3].trim(),
+                            element: e[6]
+                        }));
+                        return;
+                    }
+                    if (jsonData[1][0] === "P1_WIN") {
+                        const venueData = getVenueData(currentVenue);
+                        const drops = jsonData[1][2];
+                        venueData.battleCount++;
+                        drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
+                        drops.forEach(([id]) => {
+                            const existing = sessionDropOrder.indexOf(String(id));
+                            if (existing !== -1) sessionDropOrder.splice(existing, 1);
+                            sessionDropOrder.unshift(String(id));
+                        });
+                        console.log('sessionDropOrder after win:', sessionDropOrder);
+console.log('sample entry id type:', typeof normalizeData(currentVenue)[0]?.id);
+                        saveVenueData(currentVenue, venueData);
+                        updateQuestProgress(drops);
+                        updateUI(drops);
+                    }
+                } catch (err) { console.warn("Coliseum Tracker error:", err); }
+            });
             }
             return ws;
         };
@@ -560,7 +576,7 @@ input[type="checkbox"] {
 .gc-header {
     background-color: var(--gc-frame); padding: var(--gc-pad-lg); display: flex; align-items: center;
     gap: 1em; line-height: 1.5em; color: var(--gc-header-text);
-    & > button:first-child { align-self: stretch; margin: calc(var(--gc-pad-lg) * -1) calc(var(--gc-pad-md) * -1) calc(var(--gc-pad-lg) * -1) calc(var(--gc-pad-lg) * -1);
+    & > button:first-child { align-self: stretch; margin: calc(var(--gc-pad-lg) * -1) calc(var(--gc-pad-md) * -1) calc(var(--gc-pad-lg) * -1) calc(var(--gc-pad-lg) * -1); 
     padding: var(--gc-pad-lg) var(--gc-pad-md) var(--gc-pad-lg) var(--gc-pad-lg); }
     & > button > svg { width: calc(var(--gc-fontSize) + 0.5em); height: calc(var(--gc-fontSize) + 0.5em); }
 }
@@ -737,7 +753,7 @@ input[type="checkbox"] {
                 updateUI();
             }
         }, 200);
-        // timeout if the enemyPoll for some reason doesn't get populated when a battle starts to ensure it doesn't keep running
+        // timeout if the enemyPoll for some reason doesn't get populated when a battle starts to ensure it doesn't keep running 
         setTimeout(() => clearInterval(enemyPoll), 30000);
 
         injectGCStyles(); buildUI(); updateUI(); applyColumnMode();
@@ -963,17 +979,17 @@ input[type="checkbox"] {
         else if (toggleStyle === "icon-small") {
                 if (toggleContrast) {
                     gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em; padding: var(--gc-pad-sm); fill: var(--gc-button-text)"))
-                    gcMainToggle.style.backgroundColor = "var(--gc-button)";
+                    gcMainToggle.style.backgroundColor = "var(--gc-button)"; 
                 }
                 else {
                     gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em;"))
-                    gcMainToggle.style.backgroundColor = "";
+                    gcMainToggle.style.backgroundColor = ""; 
                 }
         }
         else if (toggleStyle === "icon-large") {
             if (toggleContrast) {
                 gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em; padding: var(--gc-pad-sm); fill: var(--gc-button-text)"));
-                gcMainToggle.style.backgroundColor = "var(--gc-button)";
+                gcMainToggle.style.backgroundColor = "var(--gc-button)"; 
             }
             else {gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em;"));
                             gcMainToggle.style.backgroundColor = ""; }
@@ -1038,7 +1054,7 @@ input[type="checkbox"] {
 
         if (resolvedVenue !== "All" && resolvedVenue !== currentVenue) return;
         if (resolvedVenue === "All") { buildOverview(); return; }
-        if (sortMode.includes("amount")) { buildOverview(); return; }
+        if (sortMode.includes("amount") || sortMode.includes("recent")) { buildOverview(); return; }
 
         for (const [id] of drops) {
             const idStr = String(id);
@@ -1724,8 +1740,8 @@ input[type="checkbox"] {
         const footer = el("div", { class: "gc-footer" });
 
         gcFooterSortSelect = footer.appendChild(el("select"));
-        [["name", "Name"], ["amount", "Amount"], ["id", "ID"],
-        ["category-name", "Category + Name"], ["category-amount", "Category + Amount"], ["category-id", "Category + ID"]]
+        [["name", "Name"], ["amount", "Amount"], ["id", "ID"], ["recent", "Most Recent"],
+        ["category-name", "Category + Name"], ["category-amount", "Category + Amount"], ["category-id", "Category + ID"], ["category-recent", "Category + Recent"]]
             .forEach(([value, text]) => gcFooterSortSelect.appendChild(el("option", { value, text })));
         gcFooterSortSelect.value = sortMode;
         gcFooterSortSelect.addEventListener("change", () => {
@@ -1857,8 +1873,8 @@ input[type="checkbox"] {
 
         panelCol.appendChild(el("label", { text: "Main Panel", class: "gc-span", style: "font-weight: bold; text-align: center;", title: "Set size and position for the main panel as a backup if the resize and drag handles do not work on your device" }));
 
-        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null,
-            v => { const val = parseInt(v); if (!val) return;
+        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null, 
+            v => { const val = parseInt(v); if (!val) return; 
                 gcMainPanel.style.width = `${val}px`;
                 requestAnimationFrame(() => {
                 const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
@@ -1866,8 +1882,8 @@ input[type="checkbox"] {
                 localStorage.setItem("fr_coli_panelWidth", actual);
             }); }, "Set main panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.");
 
-        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null,
-            v => { const val = parseInt(v); if (!val) return;
+        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null, 
+            v => { const val = parseInt(v); if (!val) return; 
                 gcMainPanel.style.height = `${val}px`;
                 requestAnimationFrame(() => {
                     const actual = Math.round(gcMainPanel.getBoundingClientRect().height);
@@ -1903,7 +1919,7 @@ input[type="checkbox"] {
                 localStorage.setItem("fr_coli_settingsPanelWidth", actual);
             });
         }, "Set setting panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.")
-
+        
         settingsHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_settingsPanelHeight") ?? 500, null, null,
         v => {
             const val = parseInt(v);
@@ -1929,7 +1945,7 @@ input[type="checkbox"] {
             gcSettingsPanel.style.right = `${val}px`;
             localStorage.setItem("fr_coli_settingsPosRight", val);
         }, "Set position of settings panel from the right edge of the browser in pixels");
-
+        
         gcSettingsContentPanel.appendChild(panelCol);
         return gcSettingsContentPanel;
     }
@@ -1939,7 +1955,7 @@ input[type="checkbox"] {
         gcSettingsContentVisual = el("div", { class: "gc-mainContent gc-hidden" });
         const displayCol = el("div", { class: "gc-flex-col" });
 
-        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40",
+        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40", 
             v => { fontSize = parseInt(v); localStorage.setItem("fr_coli_fontSize", v); gcRoot.style.setProperty("--gc-fontSize", `${v}px`);
             applyColumnMode(); }, "Set font size - affects panel size");
 
@@ -2411,7 +2427,7 @@ input[type="checkbox"] {
         themePresetManager._refresh();
         highlightPresetManager._refresh();
         applyTheme(activeThemeName);
-
+        
         applyIconMode();
         applyToggleStyle();
         applyPaddingPreset(paddingMode);
