@@ -156,7 +156,7 @@
         return headerMode === "always" || (headerMode === "all" && activeCategory === "All");
     }
     
-    const sessionDropOrder = [];
+    const sessionDropOrder = JSON.parse(localStorage.getItem("fr_coli_dropOrder") ?? "[]");
     const venueDataCache = {};
     function getVenueData(v) {
         if (!venueDataCache[v]) {
@@ -437,8 +437,7 @@
                             if (existing !== -1) sessionDropOrder.splice(existing, 1);
                             sessionDropOrder.unshift(String(id));
                         });
-                        console.log('sessionDropOrder after win:', sessionDropOrder);
-console.log('sample entry id type:', typeof normalizeData(currentVenue)[0]?.id);
+                        localStorage.setItem("fr_coli_dropOrder", JSON.stringify(sessionDropOrder));
                         saveVenueData(currentVenue, venueData);
                         updateQuestProgress(drops);
                         updateUI(drops);
@@ -1768,6 +1767,8 @@ input[type="checkbox"] {
         allVenuesBtn.addEventListener("click", () => {
             resetVenueDropdown.classList.add("gc-hidden");
             if (!confirm("Reset loot data for ALL venues? This cannot be undone.")) return;
+            sessionDropOrder.length = 0;
+            localStorage.setItem("fr_coli_dropOrder", JSON.stringify(sessionDropOrder));
             Object.keys(venueDisplayMap).forEach(key => saveVenueData(key, { battleCount: 0, loot: {} }));
             updateUI();
         });
@@ -1779,6 +1780,13 @@ input[type="checkbox"] {
             btn.addEventListener("click", () => {
                 resetVenueDropdown.classList.add("gc-hidden");
                 if (!confirm(`Reset all loot data for ${name}?`)) return;
+                const venueItems = Object.keys(getVenueData(key).loot);
+                venueItems.forEach(id => {
+                    const idx = sessionDropOrder.indexOf(id);
+                    if (idx !== -1) sessionDropOrder.splice(idx, 1);
+                });
+                localStorage.setItem("fr_coli_dropOrder", JSON.stringify(sessionDropOrder));
+                
                 saveVenueData(key, { battleCount: 0, loot: {} });
                 updateUI();
             });
