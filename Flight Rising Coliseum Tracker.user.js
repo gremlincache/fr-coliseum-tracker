@@ -155,7 +155,7 @@
     function showHeader() {
         return headerMode === "always" || (headerMode === "all" && activeCategory === "All");
     }
-    
+
     const sessionDropOrder = JSON.parse(localStorage.getItem("fr_coli_dropOrder") ?? "[]");
     const venueDataCache = {};
     function getVenueData(v) {
@@ -410,40 +410,40 @@
         window.WebSocket = function (url, ...rest) {
             const ws = new OriginalWebSocket(url, ...rest);
             if (url.includes("/battle")) {
-            ws.addEventListener("message", event => {
-                if (event.data.indexOf("[") === -1) return; // not JSON, skip silently
-                let jsonData;
-                try { jsonData = JSON.parse(event.data.slice(event.data.indexOf("[")));} 
-                catch { return; }
-                // Only warn on logic errors, not parse errors
-                try {
-                    if (!Array.isArray(jsonData) || !jsonData[1]) return;
-                    if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
-                        currentVenue = jsonData[1][0];
-                        localStorage.setItem("fr_coli_currentVenue", currentVenue);
-                        currentEnemies = jsonData[1][1].map(e => ({
-                            name: e[3].trim(),
-                            element: e[6]
-                        }));
-                        return;
-                    }
-                    if (jsonData[1][0] === "P1_WIN") {
-                        const venueData = getVenueData(currentVenue);
-                        const drops = jsonData[1][2];
-                        venueData.battleCount++;
-                        drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
-                        drops.forEach(([id]) => {
-                            const existing = sessionDropOrder.indexOf(String(id));
-                            if (existing !== -1) sessionDropOrder.splice(existing, 1);
-                            sessionDropOrder.unshift(String(id));
-                        });
-                        localStorage.setItem("fr_coli_dropOrder", JSON.stringify(sessionDropOrder));
-                        saveVenueData(currentVenue, venueData);
-                        updateQuestProgress(drops);
-                        updateUI(drops);
-                    }
-                } catch (err) { console.warn("Coliseum Tracker error:", err); }
-            });
+                ws.addEventListener("message", event => {
+                    if (event.data.indexOf("[") === -1) return; // not JSON, skip silently
+                    let jsonData;
+                    try { jsonData = JSON.parse(event.data.slice(event.data.indexOf("["))); }
+                    catch { return; }
+                    // Only warn on logic errors, not parse errors
+                    try {
+                        if (!Array.isArray(jsonData) || !jsonData[1]) return;
+                        if (typeof jsonData[1][0] === "string" && Array.isArray(jsonData[1][1])) {
+                            currentVenue = jsonData[1][0];
+                            localStorage.setItem("fr_coli_currentVenue", currentVenue);
+                            currentEnemies = jsonData[1][1].map(e => ({
+                                name: e[3].trim(),
+                                element: e[6]
+                            }));
+                            return;
+                        }
+                        if (jsonData[1][0] === "P1_WIN") {
+                            const venueData = getVenueData(currentVenue);
+                            const drops = jsonData[1][2];
+                            venueData.battleCount++;
+                            drops.forEach(([id, , amount]) => { venueData.loot[id] = (venueData.loot[id] || 0) + amount; });
+                            drops.forEach(([id]) => {
+                                const existing = sessionDropOrder.indexOf(String(id));
+                                if (existing !== -1) sessionDropOrder.splice(existing, 1);
+                                sessionDropOrder.unshift(String(id));
+                            });
+                            localStorage.setItem("fr_coli_dropOrder", JSON.stringify(sessionDropOrder));
+                            saveVenueData(currentVenue, venueData);
+                            updateQuestProgress(drops);
+                            updateUI(drops);
+                        }
+                    } catch (err) { console.warn("Coliseum Tracker error:", err); }
+                });
             }
             return ws;
         };
@@ -815,14 +815,14 @@ input[type="checkbox"] {
         return select;
     }
 
-    function makeSettingInput(parent, labelText, type, value, min = null, max = null, applyFn, tooltip ="") {
+    function makeSettingInput(parent, labelText, type, value, min = null, max = null, applyFn, tooltip = "") {
         const labelAttrs = { text: labelText };
         if (tooltip) labelAttrs.title = tooltip;
         parent.appendChild(el("label", labelAttrs));
         const input = parent.appendChild(el("input"));
         input.type = type;
         input.value = value;
-        if(min) input.min = min;
+        if (min) input.min = min;
         if (max) input.max = max;
         input.addEventListener("change", () => applyFn(input.value));
         return input;
@@ -958,7 +958,7 @@ input[type="checkbox"] {
 
     const settingsResizeObserver = new ResizeObserver(entries => {
         const { width, height } = entries[0].contentRect;
-                if (!width || !height) return;
+        if (!width || !height) return;
         localStorage.setItem("fr_coli_settingsPanelWidth", Math.round(width));
         localStorage.setItem("fr_coli_settingsPanelHeight", Math.round(height));
         if (settingsWidthInput) settingsWidthInput.value = Math.round(width);
@@ -976,22 +976,24 @@ input[type="checkbox"] {
 
         if (toggleStyle === "text") gcMainToggle.appendChild(document.createTextNode("Coliseum Tracker"));
         else if (toggleStyle === "icon-small") {
-                if (toggleContrast) {
-                    gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em; padding: var(--gc-pad-sm); fill: var(--gc-button-text)"))
-                    gcMainToggle.style.backgroundColor = "var(--gc-button)"; 
-                }
-                else {
-                    gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em;"))
-                    gcMainToggle.style.backgroundColor = ""; 
-                }
+            if (toggleContrast) {
+                gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em; padding: var(--gc-pad-sm); fill: var(--gc-button-text)"))
+                gcMainToggle.style.backgroundColor = "var(--gc-button)";
+            }
+            else {
+                gcMainToggle.appendChild(createIcon("SmallIcon", "width: 2em; height: 2em;"))
+                gcMainToggle.style.backgroundColor = "";
+            }
         }
         else if (toggleStyle === "icon-large") {
             if (toggleContrast) {
                 gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em; padding: var(--gc-pad-sm); fill: var(--gc-button-text)"));
-                gcMainToggle.style.backgroundColor = "var(--gc-button)"; 
+                gcMainToggle.style.backgroundColor = "var(--gc-button)";
             }
-            else {gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em;"));
-                            gcMainToggle.style.backgroundColor = ""; }
+            else {
+                gcMainToggle.appendChild(createIcon("BigIcon", "width: 4em; height: 4em;"));
+                gcMainToggle.style.backgroundColor = "";
+            }
         }
         if (handle) gcMainToggle.appendChild(handle);
     }
@@ -1786,7 +1788,7 @@ input[type="checkbox"] {
                     if (idx !== -1) sessionDropOrder.splice(idx, 1);
                 });
                 localStorage.setItem("fr_coli_dropOrder", JSON.stringify(sessionDropOrder));
-                
+
                 saveVenueData(key, { battleCount: 0, loot: {} });
                 updateUI();
             });
@@ -1844,7 +1846,7 @@ input[type="checkbox"] {
         gcSettingsTabPanel = tabs.appendChild(el("button", { text: "Panel" }));
         gcSettingsTabVisual.addEventListener("click", () => { switchTab("Visual"); fitColumns(themeDetailEl); });
         gcSettingsTabHighlights.addEventListener("click", () => { switchTab("Highlights"); fitColumns(highlightDetailEl); });
-        gcSettingsTabPanel.addEventListener("click", () => { switchTab("Panel")});
+        gcSettingsTabPanel.addEventListener("click", () => { switchTab("Panel") });
         return tabs;
     }
 
@@ -1870,90 +1872,94 @@ input[type="checkbox"] {
             toggleContrast = contrastCheckbox.checked;
             localStorage.setItem("fr_coli_toggleContrast", toggleContrast);
             applyToggleStyle();
-            });
+        });
 
-        makeSettingSelect(panelCol, "Padding:", [["compact", "Compact"],["normal", "Normal"], ["comfortable", "Comfortable"]], paddingMode,
+        makeSettingSelect(panelCol, "Padding:", [["compact", "Compact"], ["normal", "Normal"], ["comfortable", "Comfortable"]], paddingMode,
             v => { paddingMode = v; localStorage.setItem("fr_coli_paddingPreset", v); applyPaddingPreset(v); }, "How much padding the layout will have");
 
         panelCol.appendChild(dividerH());
 
-        panelCol.appendChild(el("span", { text: "Settings below are backups if the resize and drag handles do not work on your device. Please use caution since large values may shift the windows off-screen", class: "gc-span", style: "text-align: center; font-size: calc(var(--gc-fontSize) * 0.8)"}));
+        panelCol.appendChild(el("span", { text: "Settings below are backups if the resize and drag handles do not work on your device. Please use caution since large values may shift the windows off-screen", class: "gc-span", style: "text-align: center; font-size: calc(var(--gc-fontSize) * 0.8)" }));
 
         panelCol.appendChild(el("label", { text: "Main Panel", class: "gc-span", style: "font-weight: bold; text-align: center;", title: "Set size and position for the main panel as a backup if the resize and drag handles do not work on your device" }));
 
-        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null, 
-            v => { const val = parseInt(v); if (!val) return; 
+        panelWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_panelWidth") ?? 400, null, null,
+            v => {
+                const val = parseInt(v); if (!val) return;
                 gcMainPanel.style.width = `${val}px`;
                 requestAnimationFrame(() => {
-                const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
-                if (actual !== val) panelWidthInput.value = actual;
-                localStorage.setItem("fr_coli_panelWidth", actual);
-            }); }, "Set main panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.");
+                    const actual = Math.round(gcMainPanel.getBoundingClientRect().width);
+                    if (actual !== val) panelWidthInput.value = actual;
+                    localStorage.setItem("fr_coli_panelWidth", actual);
+                });
+            }, "Set main panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.");
 
-        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null, 
-            v => { const val = parseInt(v); if (!val) return; 
+        panelHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_panelHeight") ?? 500, null, null,
+            v => {
+                const val = parseInt(v); if (!val) return;
                 gcMainPanel.style.height = `${val}px`;
                 requestAnimationFrame(() => {
                     const actual = Math.round(gcMainPanel.getBoundingClientRect().height);
                     if (actual !== val) panelHeightInput.value = actual;
                     localStorage.setItem("fr_coli_panelHeight", actual);
-                }); }, "Set main panel height in pixels");
+                });
+            }, "Set main panel height in pixels");
 
         panelTopInput = makeSettingInput(panelCol, "Distance from top:", "number", localStorage.getItem("fr_coli_posTop") ?? 10, 0, null,
-        v => {
-            const val = parseInt(v); if (isNaN(val) || val < 0) return;
-            gcMainPanel.style.top = `${val}px`;
-            localStorage.setItem("fr_coli_posTop", val);
-        }, "Set position of panel from the top of the browser edge in pixels");
+            v => {
+                const val = parseInt(v); if (isNaN(val) || val < 0) return;
+                gcMainPanel.style.top = `${val}px`;
+                localStorage.setItem("fr_coli_posTop", val);
+            }, "Set position of panel from the top of the browser edge in pixels");
 
         panelRightInput = makeSettingInput(panelCol, "Distance from right:", "number", localStorage.getItem("fr_coli_posRight") ?? 10, 0, null,
-        v => {
-            const val = parseInt(v); if (isNaN(val) || val < 0) return;
-            gcMainPanel.style.right = `${val}px`;
-            localStorage.setItem("fr_coli_posRight", val);
-        }, "Set position of panel from the right edge of the browser in pixels");
+            v => {
+                const val = parseInt(v); if (isNaN(val) || val < 0) return;
+                gcMainPanel.style.right = `${val}px`;
+                localStorage.setItem("fr_coli_posRight", val);
+            }, "Set position of panel from the right edge of the browser in pixels");
 
         panelCol.appendChild(dividerH());
         panelCol.appendChild(el("label", { text: "Settings Panel", class: "gc-span", style: "font-weight: bold; text-align: center;", title: "Set size and position for the settings panel as a backup if the resize and drag handles do not work on your device" }));
 
         settingsWidthInput = makeSettingInput(panelCol, "Width:", "number", localStorage.getItem("fr_coli_settingsPanelWidth") ?? 400, null, null,
-        v => {
-            const val = parseInt(v);
-            if (!val) return;
-            gcSettingsPanel.style.width = `${val}px`;
-            requestAnimationFrame(() => {
-                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().width);
-                if (actual !== val) settingsWidthInput.value = actual;
-                localStorage.setItem("fr_coli_settingsPanelWidth", actual);
-            });
-        }, "Set setting panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.")
-        
+            v => {
+                const val = parseInt(v);
+                if (!val) return;
+                gcSettingsPanel.style.width = `${val}px`;
+                requestAnimationFrame(() => {
+                    const actual = Math.round(gcSettingsPanel.getBoundingClientRect().width);
+                    if (actual !== val) settingsWidthInput.value = actual;
+                    localStorage.setItem("fr_coli_settingsPanelWidth", actual);
+                });
+            }, "Set setting panel width in pixels. Minimum value is the space needed to render all elements - reduce the font size to shrink it further.")
+
         settingsHeightInput = makeSettingInput(panelCol, "Height:", "number", localStorage.getItem("fr_coli_settingsPanelHeight") ?? 500, null, null,
-        v => {
-            const val = parseInt(v);
-            if (!val) return;
-            gcSettingsPanel.style.height = `${val}px`;
-            requestAnimationFrame(() => {
-                const actual = Math.round(gcSettingsPanel.getBoundingClientRect().height);
-                if (actual !== val) settingsHeightInput.value = actual;
-                localStorage.setItem("fr_coli_settingsPanelHeight", actual);
-            });
-        }, "Set setting panel height in pixels")
+            v => {
+                const val = parseInt(v);
+                if (!val) return;
+                gcSettingsPanel.style.height = `${val}px`;
+                requestAnimationFrame(() => {
+                    const actual = Math.round(gcSettingsPanel.getBoundingClientRect().height);
+                    if (actual !== val) settingsHeightInput.value = actual;
+                    localStorage.setItem("fr_coli_settingsPanelHeight", actual);
+                });
+            }, "Set setting panel height in pixels")
 
         settingsTopInput = makeSettingInput(panelCol, "Distance from top:", "number", localStorage.getItem("fr_coli_settingsPosTop") ?? 10, 0, null,
-                v => {
-                    const val = parseInt(v); if (isNaN(val) || val < 0) return;
-                    gcSettingsPanel.style.top = `${val}px`;
-                    localStorage.setItem("fr_coli_settingsPosTop", val);
-                }, "Set position of the settings panel from the top of the browser edge in pixels");
+            v => {
+                const val = parseInt(v); if (isNaN(val) || val < 0) return;
+                gcSettingsPanel.style.top = `${val}px`;
+                localStorage.setItem("fr_coli_settingsPosTop", val);
+            }, "Set position of the settings panel from the top of the browser edge in pixels");
 
         settingsRightInput = makeSettingInput(panelCol, "Distance from right:", "number", localStorage.getItem("fr_coli_settingsPosRight") ?? 10, 0, null,
-        v => {
-            const val = parseInt(v); if (isNaN(val) || val < 0) return;
-            gcSettingsPanel.style.right = `${val}px`;
-            localStorage.setItem("fr_coli_settingsPosRight", val);
-        }, "Set position of settings panel from the right edge of the browser in pixels");
-        
+            v => {
+                const val = parseInt(v); if (isNaN(val) || val < 0) return;
+                gcSettingsPanel.style.right = `${val}px`;
+                localStorage.setItem("fr_coli_settingsPosRight", val);
+            }, "Set position of settings panel from the right edge of the browser in pixels");
+
         gcSettingsContentPanel.appendChild(panelCol);
         return gcSettingsContentPanel;
     }
@@ -1963,9 +1969,11 @@ input[type="checkbox"] {
         gcSettingsContentVisual = el("div", { class: "gc-mainContent gc-hidden" });
         const displayCol = el("div", { class: "gc-flex-col" });
 
-        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40", 
-            v => { fontSize = parseInt(v); localStorage.setItem("fr_coli_fontSize", v); gcRoot.style.setProperty("--gc-fontSize", `${v}px`);
-            applyColumnMode(); }, "Set font size - affects panel size");
+        makeSettingInput(displayCol, "Font Size:", "number", fontSize, "5", "40",
+            v => {
+                fontSize = parseInt(v); localStorage.setItem("fr_coli_fontSize", v); gcRoot.style.setProperty("--gc-fontSize", `${v}px`);
+                applyColumnMode();
+            }, "Set font size - affects panel size");
 
         makeSettingSelect(displayCol, "Font:",
             [["Verdana, Geneva, sans-serif", "Verdana"], ["Trebuchet MS, sans-serif", "Trebuchet MS"], ["Arial, sans-serif", "Arial"], ["Tahoma, Geneva, sans-serif", "Tahoma"], ["Segoe UI, sans-serif", "Segoe UI"], ["Georgia, serif", "Georgia"], ["Palatino Linotype, Palatino, serif", "Palatino"], ["Courier New, monospace", "Courier New"], ["Comic Sans MS, sans-serif", "Comic Sans MS"]], savedFont,
@@ -2173,7 +2181,7 @@ input[type="checkbox"] {
 
         const importExportRow = el("div", { class: "gc-flex-row gc-span", style: "justify-content: center; flex-wrap: wrap;" });
 
-        const importBtn = el("button", { class: "gc-buttonSmall", text: "Import Preset from File"});
+        const importBtn = el("button", { class: "gc-buttonSmall", text: "Import Preset from File" });
         importBtn.addEventListener("click", () => {
             const input = document.createElement("input");
             input.type = "file"; input.accept = ".json";
@@ -2435,7 +2443,7 @@ input[type="checkbox"] {
         themePresetManager._refresh();
         highlightPresetManager._refresh();
         applyTheme(activeThemeName);
-        
+
         applyIconMode();
         applyToggleStyle();
         applyPaddingPreset(paddingMode);
