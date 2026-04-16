@@ -2852,6 +2852,7 @@
 61507: { name: "Scene: Volcanic Vents", category: "Specialty", venues: ["volcanic_vents"] },
 67031: { name: "Vista: Bamboo Falls II", category: "Specialty", venues: ["bamboo_waterfall"] },
 67032: { name: "Scene: Bamboo Falls", category: "Specialty", venues: ["bamboo_waterfall"] },
+68207: { name: "Ancient Gene Parchment: Porcelain", category: "Specialty", element: ["shadow", "ice"], allVenues: true },
     };
 })();
 
