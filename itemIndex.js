@@ -233,7 +233,7 @@
 25033: { name: "Blooming Woodbrace", category: "Apparel", venues: ["blooming_grove"] },
 26275: { name: "Swamp Kelpie Mane", category: "Apparel", venues: ["mire"] },
 26534: { name: "Date Plumed Corsage", category: "Apparel", venues: ["woodland_border"] },
-26535: { name: "Date Plumed Jabbot", category: "Apparel", venues: ["woodland_border"] },
+26535: { name: "Date Plumed Jabot", category: "Apparel", venues: ["woodland_border"] },
 26536: { name: "Date Plumed Cover", category: "Apparel", venues: ["woodland_border"] },
 26537: { name: "Date Plumed Anklets", category: "Apparel", venues: ["woodland_border"] },
 26538: { name: "Date Plumed Mantle", category: "Apparel", venues: ["woodland_border"] },
