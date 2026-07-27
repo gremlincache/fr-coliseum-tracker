@@ -11,14 +11,14 @@
 
     window.itemIndex = {
 // FEST CHESTS
-68903: { name: "Scion of Helios Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
-68904: { name: "Gleam of Grace Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
-68905: { name: "Doctrine of the Unclouded Eye Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
-68906: { name: "Sunburn Radiance Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
-68907: { name: "Brilliant Artisan Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
-68908: { name: "Brightshine Beast Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
-68909: { name: "Hewn Rider Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
-68910: { name: "Gilded Magnolia Chest", category: "Other", element: ["light", "neutral"], allVenues: true, festival: "elemental"},
+69296: { name: "Time Flies Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69297: { name: "B0TSN3AK Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69298: { name: "Open Pool Reactor Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69299: { name: "Construct Disguise Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69300: { name: "Through the Storm Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69301: { name: "Dead Line Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69302: { name: "Hypercharged Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69303: { name: "Electric Foilage Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
 
 // APPAREL
 268: { name: "Grey Wizard Hat", category: "Apparel", enemies: ["Wandering Surge Priest"] },
@@ -613,7 +613,7 @@
 4806: { name: "Permafrost Impaler", category: "Familiars", enemies: ["Permafrost Impaler"] },
 5177: { name: "Greenroot Janustrap", category: "Familiars", enemies: ["Greenroot Janustrap"] },
 5178: { name: "Janustrap", category: "Familiars", enemies: ["Janustrap"] },
-6332: { name: "Serthis Potionmaster", category: "Familiars", enemies: ["Serthis Potionmaster"] },
+6332: { name: "Serthis Potionmaker", category: "Familiars", enemies: ["Serthis Potionmaker"] },
 6333: { name: "Serthis Alchemist", category: "Familiars", enemies: ["Serthis Alchemist"] },
 6334: { name: "Blacktalon Striker", category: "Familiars", enemies: ["Blacktalon Striker"] },
 6335: { name: "Raptorik Warrior", category: "Familiars", enemies: ["Raptorik Warrior"] },
