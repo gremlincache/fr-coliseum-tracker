@@ -2853,6 +2853,7 @@
 67031: { name: "Vista: Bamboo Falls II", category: "Specialty", venues: ["bamboo_waterfall"] },
 67032: { name: "Scene: Bamboo Falls", category: "Specialty", venues: ["bamboo_waterfall"] },
 68207: { name: "Ancient Gene Parchment: Porcelain", category: "Specialty", element: ["shadow", "ice"], allVenues: true },
+69661: { name: "Ancient Gene Parchment: Bark", category: "Specialty", element: ["earth", "nature", "water"], allVenues: true },
     };
 })();
 
