@@ -11,14 +11,14 @@
 
     window.itemIndex = {
 // FEST CHESTS
-69296: { name: "Time Flies Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
-69297: { name: "B0TSN3AK Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
-69298: { name: "Open Pool Reactor Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
-69299: { name: "Construct Disguise Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
-69300: { name: "Through the Storm Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
-69301: { name: "Dead Line Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
-69302: { name: "Hypercharged Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
-69303: { name: "Electric Foilage Chest", category: "Other", element: ["lightning", "neutral"], allVenues: true, festival: "elemental"},
+69716: { name: "Magma Cat Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
+69717: { name: "Furnace Delver Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
+69718: { name: "Flamelapse Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
+69719: { name: "Song of Ashes Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
+69720: { name: "Fire Dance Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
+69721: { name: "Flame-Forged Hero Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
+69722: { name: "Set Blue Sea Ablaze Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
+69723: { name: "Fan the Flame Chest", category: "Other", element: ["fire", "neutral"], allVenues: true, festival: "elemental"},
 
 // APPAREL
 268: { name: "Grey Wizard Hat", category: "Apparel", enemies: ["Wandering Surge Priest"] },
