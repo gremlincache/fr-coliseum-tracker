@@ -830,7 +830,7 @@
 25776: { name: "Rat King", category: "Familiars", enemies: ["Rat King"] },
 25777: { name: "Ghostly Rat Lord", category: "Familiars", enemies: ["Ghostly Rat Lord"] },
 27664: { name: "Harvest Hardshell", category: "Familiars", element: ["neutral"], allVenues: true },
-27665: { name: "Plantation Pincher", category: "Familiars", element: ["neutral"], allVenues: true },
+27665: { name: "Blossom Blueclaw", category: "Familiars", element: ["neutral"], allVenues: true },
 28128: { name: "Flesh Forager", category: "Familiars", enemies: ["Flesh Forager"] },
 28133: { name: "Condorwing Champion", category: "Familiars", enemies: ["Condorwing Champion"] },
 28137: { name: "Dire Vulture", category: "Familiars", enemies: ["Dire Vulture"] },
