@@ -11,14 +11,14 @@
 
     window.itemIndex = {
 // FEST CHESTS
-70070: { name: "Arcane Ephemeris Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
-70071: { name: "Cuffs of Constellation Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
-70072: { name: "Cosmic Anomaly Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
-70073: { name: "Starsoup Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
-70074: { name: "Loopholes Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
-70075: { name: "Arcanosynthesis Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
-70076: { name: "Seeping Runes Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
-70077: { name: "Crystal Binder Chest", category: "Other", element: ["arcane", "neutral"], allVenues: true, festival: "elemental"},
+70524: { name: "Decaying Monarch Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
+70525: { name: "Bone Flower Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
+70526: { name: "Evolvin' Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
+70527: { name: "Eye-ssistance Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
+70528: { name: "Boneyard Scavenger Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
+70529: { name: "Parasite Blossom Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
+70530: { name: "Kiss of Rot Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
+70531: { name: "Carry on, Carrion Chest", category: "Other", element: ["plague", "neutral"], allVenues: true, festival: "elemental"},
 
 // APPAREL
 268: { name: "Grey Wizard Hat", category: "Apparel", enemies: ["Wandering Surge Priest"] },
